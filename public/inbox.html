@@ -133,23 +133,6 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
 
-    .toolbar button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 500;
-      margin-right: 12px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .toolbar button:hover {
-      background: var(--accent-hover);
-    }
-
     .toolbar h2 {
       font-size: 18px;
       font-weight: 500;
@@ -267,23 +250,20 @@
     <div class="sidebar-item active">
       <i>📧</i> <span>Inbox</span>
     </div>
-    <div class="sidebar-item" onclick="location.href='compose.html'">
-      <i>✏️</i> <span>Compose</span>
-    </div>
+    <!-- Removed Compose button -->
   </div>
 
   <!-- Main Content -->
   <div class="main-content">
     <!-- Toolbar -->
     <div class="toolbar">
-      <button onclick="location.href='compose.html'">Compose</button>
       <h2>Inbox</h2>
     </div>
 
     <!-- Message List -->
     <div class="messages" id="messages">
       <div style="padding: 20px; color: var(--text-secondary); font-style: italic; text-align: center;">
-        Loading messages...
+        No messages yet.
       </div>
     </div>
   </div>
