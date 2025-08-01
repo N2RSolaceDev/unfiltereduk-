@@ -11,7 +11,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static('public')); // Serve HTML, CSS, JS
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// Enforce unique email
 userSchema.index({ email: 1 }, { unique: true });
 const User = mongoose.model('User', userSchema);
 
@@ -49,8 +50,8 @@ const Message = mongoose.model('Message', messageSchema);
 // API Key Schema
 const apiKeySchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
-  createdBy: { type: String, required: true },
-  partnerName: { type: String, required: true },
+  createdBy: { type: String, required: true }, // admin email
+  partnerName: { type: String, required: true }, // used for "from" email
   permissions: { type: [String], default: ['send'] },
   expiresAt: Date,
   revoked: { type: Boolean, default: false },
@@ -195,19 +196,43 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
   }
 
   const { partnerName, expiresDays } = req.body;
-  const key = `ukapi_${Buffer.from(req.user.email).toString('base64').replace(/\+/g, '0').replace(/\//g, '1').substring(0, 16)}_${crypto.randomBytes(16).toString('hex')}`;
+
+  if (!partnerName || !partnerName.trim()) {
+    return res.status(400).json({ error: 'Partner name is required.' });
+  }
+
+  // Clean partnerName for email use
+  const cleanName = partnerName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '') // Remove special chars
+    .substring(0, 20); // Max 20 chars
+
+  if (!cleanName) {
+    return res.status(400).json({ error: 'Partner name must contain letters or numbers.' });
+  }
+
+  // Generate secure key
+  const key = 'ukapi_' + crypto.randomBytes(32).toString('hex');
+
   const expiresAt = expiresDays ? new Date(Date.now() + expiresDays * 86400000) : null;
 
   const apiKey = new ApiKey({
     key,
     createdBy: req.user.email,
-    partnerName,
+    partnerName: cleanName,
     expiresAt,
     permissions: ['send']
   });
 
   await apiKey.save();
-  res.json({ key, expiresAt, message: 'API key generated.' });
+
+  res.json({ 
+    message: 'API key generated.', 
+    key, 
+    fromEmail: `${cleanName}@unfiltereduk.co.uk`,
+    expiresAt 
+  });
 });
 
 // 📋 List API Keys (Admin Only)
@@ -246,14 +271,21 @@ app.post('/api/automated-send', async (req, res) => {
     return res.status(403).json({ error: 'API key expired.' });
   }
 
+  // ✅ Set sender as {partnerName}@unfiltereduk.co.uk
+  const from = `${apiKey.partnerName}@unfiltereduk.co.uk`;
+
   const msg = new Message({
-    from: 'partnership@unfiltereduk.co.uk',
+    from,
     to,
     subject,
     body
   });
+
   await msg.save();
-  res.json({ message: 'Automated email sent.' });
+  res.json({ 
+    message: 'Automated email sent.',
+    from // Confirm sender
+  });
 });
 
 // 🔐 Logout
