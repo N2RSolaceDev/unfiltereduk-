@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: unfiltereduk
+    runtime: node
+    env: production
+    region: frankfurt
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 10000
