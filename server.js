@@ -124,7 +124,7 @@ app.post('/api/send', authenticateToken, async (req, res) => {
   }
 });
 
-// 📥 Inbox - Get All Messages for User
+// 📥 Inbox
 app.get('/api/inbox', authenticateToken, async (req, res) => {
   try {
     const messages = await Message.find({ to: req.user.email })
@@ -143,7 +143,6 @@ app.get('/api/email/:id', authenticateToken, async (req, res) => {
     if (!message) return res.status(404).json({ error: 'Message not found.' });
     if (message.to !== req.user.email) return res.status(403).json({ error: 'Access denied.' });
 
-    // Mark as read
     message.read = true;
     await message.save();
 
@@ -171,9 +170,33 @@ app.delete('/api/delete/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// 🚨 Delete Account
+app.delete('/api/delete-account', authenticateToken, async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Delete all messages sent or received by user
+    await Message.deleteMany({
+      $or: [{ from: req.user.email }, { to: req.user.email }]
+    }, { session });
+
+    // Delete user account
+    await User.deleteOne({ email: req.user.email }, { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json({ message: 'Account and all data deleted successfully.' });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ error: 'Account deletion failed.' });
+  }
+});
+
 // 🔐 Logout (client-side only)
 app.post('/api/logout', (req, res) => {
-  // JWT is client-managed; just confirm
   res.json({ message: 'Logged out.' });
 });
 
