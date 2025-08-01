@@ -271,6 +271,7 @@
 
         const row = document.createElement('div');
         row.className = 'message-row'; // + (msg.read ? '' : ' unread')
+        row.dataset.messageId = msg._id; // Store message ID for actions
         row.innerHTML = `
           <div class="message-sender">${msg.from}</div>
           <div class="message-subject">${msg.subject || '(No Subject)'}</div>
@@ -278,7 +279,7 @@
           <div class="message-time">${timeStr}</div>
         `;
         row.onclick = () => {
-          alert('Message from: ' + msg.from + '\n\n' + (msg.body || ''));
+          window.location.href = `email.html?id=${msg._id}`;
         };
         container.appendChild(row);
       });
