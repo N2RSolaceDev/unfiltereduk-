@@ -4,56 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login | unfiltereduk.co.uk</title>
-  <!-- Google reCAPTCHA v2 -->
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; }
     .auth-container {
-      min-height: 100vh; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      padding: 20px;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
     }
     .auth-box {
-      background: #fff; 
-      padding: 40px; 
-      border-radius: 12px; 
-      width: 100%; 
-      max-width: 400px; 
-      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+      background: #fff; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
     }
     .auth-box h2 { font-size: 24px; margin-bottom: 10px; text-align: center; }
     .auth-box p { text-align: center; color: #666; margin-bottom: 20px; }
     .auth-box input {
-      width: 100%; 
-      padding: 14px; 
-      margin: 10px 0; 
-      border: 1px solid #ddd; 
-      border-radius: 8px; 
-      font-size: 16px;
+      width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;
     }
     .auth-box button {
-      width: 100%; 
-      background: #c00; 
-      color: white; 
-      padding: 14px; 
-      border: none; 
-      border-radius: 8px; 
-      font-size: 16px; 
-      cursor: pointer; 
-      font-weight: 600;
+      width: 100%; background: #c00; color: white; padding: 14px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600;
     }
-    .g-recaptcha { margin: 15px 0; }
     .text-center { text-align: center; margin-top: 15px; }
     .text-center a { color: #c00; }
     .status {
-      padding: 12px; 
-      margin: 15px 0; 
-      border-radius: 6px; 
-      text-align: center; 
-      font-size: 14px;
+      padding: 12px; margin: 15px 0; border-radius: 6px; text-align: center; font-size: 14px;
     }
     .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -66,12 +37,8 @@
       <h2>Welcome Back</h2>
       <p>Sign in to your @unfiltereduk.co.uk account</p>
 
-      <input type="email" id="email" placeholder="you@unfiltereduk.co.uk" value="solace@unfiltereduk.co.uk" />
-      <input type="password" id="password" placeholder="Password" value="password" />
-
-      <!-- reCAPTCHA Widget -->
-      <div class="g-recaptcha" data-sitekey="6LcFapcrAAAAAKtvCnU0hq-V5fim7FNQFR7MSfOA"></div>
-
+      <input type="email" id="email" placeholder="you@unfiltereduk.co.uk" />
+      <input type="password" id="password" placeholder="Password" />
       <button onclick="login()">Login</button>
       <p class="text-center">New here? <a href="register.html">Create Account</a></p>
       <div id="status" class="status hidden"></div>
@@ -90,48 +57,21 @@
     async function login() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      const recaptchaToken = window.recaptchaToken;
 
-      // Validate input
-      if (!email || !password) {
-        return setStatus('All fields are required.', true);
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('email', data.email);
+        location.href = 'inbox.html';
+      } else {
+        setStatus(data.error, true);
       }
-      if (!recaptchaToken) {
-        return setStatus('Please complete the reCAPTCHA.', true);
-      }
-
-      try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, recaptchaToken })
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('email', data.email);
-          location.href = 'inbox.html';
-        } else {
-          setStatus(data.error, true);
-          // Reset reCAPTCHA on error
-          grecaptcha.reset();
-        }
-      } catch (err) {
-        setStatus('Network error. Please try again.', true);
-        grecaptcha.reset();
-      }
-    }
-
-    // Called automatically by reCAPTCHA API upon successful completion
-    function onReCAPTCHAComplete(token) {
-      window.recaptchaToken = token;
-    }
-
-    // Optional: Handle reCAPTCHA expiration
-    function onReCAPTCHAExpired() {
-      window.recaptchaToken = null;
     }
   </script>
 </body>
