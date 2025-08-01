@@ -4,7 +4,23 @@ function show(id) {
   if (id) document.getElementById(id).style.display = 'block';
 }
 
-// Nav Links
+function setStatus(msg, isError = false) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = `status ${isError ? 'error' : 'success'}`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 5000);
+}
+
+function setSendStatus(msg, isError = false) {
+  const el = document.getElementById('sendStatus');
+  el.textContent = msg;
+  el.className = `status ${isError ? 'error' : 'success'}`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 4000);
+}
+
+// Nav Update
 function updateNav() {
   const user = localStorage.getItem('user');
   document.getElementById('navLogin').style.display = user ? 'none' : 'inline';
@@ -15,16 +31,53 @@ function updateNav() {
   }
 }
 
-// Register or Login
-async function registerOrLogin() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-
+// Step 1: Enter Email
+function nextToPassword() {
+  const email = document.getElementById('setupEmail').value;
+  if (!email) return setStatus('Please enter your email.', true);
   if (!email.endsWith('@unfiltereduk.co.uk')) {
-    alert('Only @unfiltereduk.co.uk emails are allowed');
-    return;
+    return setStatus('Only @unfiltereduk.co.uk addresses allowed.', true);
   }
 
+  // Show password step
+  document.getElementById('stepEmail').style.display = 'none';
+  document.getElementById('stepPassword').style.display = 'block';
+  document.getElementById('statusMsg').classList.add('hidden');
+}
+
+// Password Strength Feedback
+document.getElementById('setupPassword')?.addEventListener('input', function () {
+  const pwd = this.value;
+  const feedback = document.getElementById('passwordFeedback');
+  if (pwd.length === 0) {
+    feedback.textContent = '';
+    return;
+  }
+  if (pwd.length < 6) {
+    feedback.textContent = 'Too short';
+    feedback.className = 'password-strength weak';
+  } else if (pwd.length < 10) {
+    feedback.textContent = 'Medium strength';
+    feedback.className = 'password-strength medium';
+  } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(pwd)) {
+    feedback.textContent = 'Add uppercase, lowercase, number';
+    feedback.className = 'password-strength medium';
+  } else {
+    feedback.textContent = 'Strong password';
+    feedback.className = 'password-strength strong';
+  }
+});
+
+// Step 2: Finish Setup (Login/Register)
+async function finishSetup() {
+  const email = document.getElementById('setupEmail').value;
+  const password = document.getElementById('setupPassword').value;
+
+  if (password.length < 6) {
+    return setStatus('Password must be at least 6 characters.', true);
+  }
+
+  setStatus('Setting up...', false);
   const res = await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -35,12 +88,23 @@ async function registerOrLogin() {
   if (res.ok) {
     localStorage.setItem('user', data.email);
     localStorage.setItem('token', data.token);
+    setStatus('✅ Setup complete! Redirecting...', false);
     updateNav();
-    show('dashboard');
-    loadInbox();
+    setTimeout(() => {
+      show('dashboard');
+      loadInbox();
+    }, 1000);
   } else {
-    alert('Error: ' + data.error);
+    setStatus('Error: ' + data.error, true);
   }
+}
+
+// Go back to email
+function goBackToEmail() {
+  document.getElementById('stepPassword').style.display = 'none';
+  document.getElementById('stepEmail').style.display = 'block';
+  document.getElementById('setupPassword').value = '';
+  document.getElementById('passwordFeedback').textContent = '';
 }
 
 // Send Message
@@ -51,6 +115,11 @@ async function sendMessage() {
   const from = localStorage.getItem('user');
   const token = localStorage.getItem('token');
 
+  if (!to || !subject || !body) {
+    return setSendStatus('All fields are required.', true);
+  }
+
+  setSendStatus('Sending...', false);
   const res = await fetch('/api/send', {
     method: 'POST',
     headers: {
@@ -62,13 +131,13 @@ async function sendMessage() {
 
   const data = await res.json();
   if (res.ok) {
-    alert(data.message);
+    setSendStatus(data.message);
     document.getElementById('to').value = '';
     document.getElementById('subject').value = '';
     document.getElementById('body').value = '';
-    loadInbox();
+    setTimeout(loadInbox, 1000); // Refresh inbox
   } else {
-    alert('Error: ' + data.error);
+    setSendStatus('Error: ' + data.error, true);
   }
 }
 
@@ -82,15 +151,15 @@ async function loadInbox() {
     headers: { 'Authorization': token }
   });
 
+  const inbox = document.getElementById('inbox');
   if (!res.ok) {
-    document.getElementById('inbox').innerHTML = '<p>Failed to load inbox.</p>';
+    inbox.innerHTML = '<p class="error">Failed to load inbox.</p>';
     return;
   }
 
   const messages = await res.json();
-  const inbox = document.getElementById('inbox');
   if (messages.length === 0) {
-    inbox.innerHTML = '<p>No messages yet.</p>';
+    inbox.innerHTML = '<p>You have no messages yet.</p>';
     return;
   }
 
@@ -99,10 +168,12 @@ async function loadInbox() {
     const div = document.createElement('div');
     div.className = 'msg';
     div.innerHTML = `
-      <strong>${msg["from"]}</strong>
-      <div>${msg.subject}</div>
-      <small>on ${new Date(msg.createdAt).toLocaleString()}</small>
-      <p style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;">${msg.body}</p>
+      <div class="msg-header">
+        <strong>From:</strong> ${msg["from"]} 
+        <span class="msg-date">${new Date(msg.createdAt).toLocaleString()}</span>
+      </div>
+      <div><strong>Subject:</strong> ${msg.subject}</div>
+      <p>${msg.body}</p>
     `;
     inbox.appendChild(div);
   });
@@ -113,21 +184,25 @@ document.getElementById('navLogout')?.addEventListener('click', (e) => {
   e.preventDefault();
   localStorage.removeItem('user');
   localStorage.removeItem('token');
+  document.getElementById('setupEmail').value = '';
+  document.getElementById('setupPassword').value = '';
+  document.getElementById('passwordFeedback').textContent = '';
+  document.getElementById('statusMsg').classList.add('hidden');
+  setStatus('You’ve been logged out.', false);
+  setTimeout(() => show('login'), 1000);
   updateNav();
-  show('login');
 });
 
-// On Load
+// Auto-load
 window.onload = () => {
-  const path = window.location.hash.slice(1) || 'home';
-  if (['home', 'login', 'dashboard'].includes(path)) {
-    if (path === 'dashboard' && localStorage.getItem('user')) {
-      show('dashboard');
-    } else {
-      show(path);
-    }
+  updateNav();
+  const hash = window.location.hash.slice(1) || 'home';
+  if (hash === 'dashboard' && localStorage.getItem('user')) {
+    show('dashboard');
+    loadInbox();
+  } else if (hash === 'login') {
+    show('login');
   } else {
     show('home');
   }
-  updateNav();
 };
