@@ -5,52 +5,105 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inbox | unfiltereduk.co.uk</title>
   <style>
-    /* Reset */
+    /* === Global Dark Theme === */
+    :root {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --text: #e0e0e0;
+      --text-secondary: #aaaaaa;
+      --accent: #bb86fc;
+      --accent-hover: #9b68db;
+      --border: #333333;
+      --hover-bg: #2a2a2a;
+      --unread-bg: #252525;
+      --toolbar-bg: #1f1f1f;
+    }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
     }
 
     body {
-      background: #f5f5f5;
-      color: #202124;
+      background: var(--bg);
+      color: var(--text);
       display: flex;
       min-height: 100vh;
+      transition: background 0.3s;
     }
 
-    /* Sidebar */
+    /* === Topbar === */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--border);
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .logo span {
+      color: #cf3339;
+    }
+
+    .topbar nav a {
+      margin-left: 18px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .topbar nav a:hover {
+      text-decoration: underline;
+    }
+
+    /* === Sidebar === */
     .sidebar {
       width: 250px;
-      background: #fff;
-      border-right: 1px solid #e0e0e0;
-      padding: 20px 0;
+      background: var(--card-bg);
+      border-right: 1px solid var(--border);
+      padding-top: 60px; /* below topbar */
       position: fixed;
       height: 100vh;
       overflow-y: auto;
+      transition: width 0.3s;
     }
 
     .sidebar-item {
       display: flex;
       align-items: center;
-      padding: 12px 24px;
-      color: #202124;
+      padding: 14px 24px;
+      color: var(--text);
       text-decoration: none;
       font-size: 15px;
       font-weight: 500;
       cursor: pointer;
+      border-left: 4px solid transparent;
+      transition: all 0.2s;
     }
 
     .sidebar-item:hover {
-      background: #f0f0f0;
+      background: var(--hover-bg);
     }
 
     .sidebar-item.active {
-      background: #e8f0fe;
-      color: #1a73e8;
-      border-left: 4px solid #1a73e8;
-      padding-left: 20px;
+      background: rgba(187, 134, 252, 0.15);
+      color: var(--accent);
+      border-left-color: var(--accent);
     }
 
     .sidebar-item i {
@@ -58,80 +111,90 @@
       font-size: 20px;
       width: 24px;
       text-align: center;
+      opacity: 0.9;
     }
 
-    /* Main Content */
+    /* === Main Content === */
     .main-content {
       margin-left: 250px;
       flex: 1;
       display: flex;
       flex-direction: column;
-      background: #fff;
+      background: var(--bg);
     }
 
-    /* Toolbar */
+    /* === Toolbar === */
     .toolbar {
       display: flex;
       align-items: center;
-      padding: 12px 20px;
-      border-bottom: 1px solid #e0e0e0;
-      background: #fff;
+      padding: 14px 20px;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
 
     .toolbar button {
-      background: #0b57d0;
-      color: white;
+      background: var(--accent);
+      color: #fff;
       border: none;
       padding: 10px 20px;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 14px;
       font-weight: 500;
       margin-right: 12px;
       cursor: pointer;
+      transition: background 0.2s;
     }
 
     .toolbar button:hover {
-      background: #0948b0;
+      background: var(--accent-hover);
     }
 
     .toolbar h2 {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 500;
-      color: #5f6368;
-      margin-left: 16px;
+      color: var(--text-secondary);
     }
 
-    /* Message List */
+    /* === Message List === */
     .messages {
       flex: 1;
       overflow-y: auto;
+      padding: 10px 0;
     }
 
     .message-row {
       display: flex;
       align-items: center;
-      padding: 12px 20px;
-      border-bottom: 1px solid #e0e0e0;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s ease;
+      border-left: 4px solid transparent;
     }
 
     .message-row:hover {
-      background: #f8f9fa;
+      background: var(--hover-bg);
+      border-left-color: var(--border);
     }
 
     .message-row.unread {
-      background: #f5f5f5;
+      background: var(--unread-bg);
       font-weight: 500;
+      border-left-color: transparent;
+    }
+
+    .message-row.unread:hover {
+      background: #2d2d2d;
     }
 
     .message-sender {
-      width: 200px;
+      width: 220px;
       font-weight: 500;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: #202124;
+      color: var(--text);
     }
 
     .message-subject {
@@ -139,12 +202,12 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: #202124;
+      color: var(--text);
     }
 
     .message-snippet {
       flex: 2;
-      color: #5f6368;
+      color: var(--text-secondary);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -152,44 +215,15 @@
     }
 
     .message-time {
-      color: #5f6368;
+      color: var(--text-secondary);
       font-size: 13px;
       white-space: nowrap;
       margin-left: 16px;
+      min-width: 80px;
+      text-align: right;
     }
 
-    /* Topbar (User Nav) */
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 20px;
-      background: #fff;
-      border-bottom: 1px solid #e0e0e0;
-    }
-
-    .logo {
-      font-size: 22px;
-      font-weight: bold;
-      color: #1a73e8;
-    }
-
-    .logo span {
-      color: #c00;
-    }
-
-    .topbar nav a {
-      margin-left: 20px;
-      color: #1a73e8;
-      text-decoration: none;
-      font-size: 14px;
-    }
-
-    .topbar nav a:hover {
-      text-decoration: underline;
-    }
-
-    /* Responsive */
+    /* === Responsive === */
     @media (max-width: 768px) {
       .sidebar { width: 60px; }
       .sidebar-item span { display: none; }
@@ -197,6 +231,22 @@
       .message-sender, .message-snippet { display: none; }
       .message-subject { flex: 2; }
       .main-content { margin-left: 60px; }
+      .message-time { font-size: 12px; }
+    }
+
+    /* === Smooth Animation === */
+    .messages {
+      scroll-behavior: smooth;
+    }
+
+    .message-row {
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeIn 0.4s forwards;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -232,7 +282,9 @@
 
     <!-- Message List -->
     <div class="messages" id="messages">
-      <div style="padding: 20px; color: #555; font-style: italic;">Loading messages...</div>
+      <div style="padding: 20px; color: var(--text-secondary); font-style: italic; text-align: center;">
+        Loading messages...
+      </div>
     </div>
   </div>
 
@@ -252,11 +304,11 @@
       container.innerHTML = '';
 
       if (messages.length === 0) {
-        container.innerHTML = '<div style="padding: 20px; color: #555;">No messages yet.</div>';
+        container.innerHTML = '<div style="padding: 20px; color: var(--text-secondary); text-align: center;">No messages yet.</div>';
         return;
       }
 
-      messages.forEach(msg => {
+      messages.forEach((msg, index) => {
         const now = new Date();
         const msgDate = new Date(msg.createdAt);
         let timeStr;
@@ -270,17 +322,23 @@
         }
 
         const row = document.createElement('div');
-        row.className = 'message-row'; // + (msg.read ? '' : ' unread')
-        row.dataset.messageId = msg._id; // Store message ID for actions
+        row.className = 'message-row';
+        if (!msg.read) row.classList.add('unread');
+        row.dataset.messageId = msg._id;
+
+        row.style.animationDelay = (index * 0.05) + 's';
+
         row.innerHTML = `
           <div class="message-sender">${msg.from}</div>
           <div class="message-subject">${msg.subject || '(No Subject)'}</div>
           <div class="message-snippet">${msg.body.substring(0, 100)}${msg.body.length > 100 ? '...' : ''}</div>
           <div class="message-time">${timeStr}</div>
         `;
+
         row.onclick = () => {
           window.location.href = `email.html?id=${msg._id}`;
         };
+
         container.appendChild(row);
       });
     }
