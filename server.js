@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// Unique index on email
 userSchema.index({ email: 1 }, { unique: true });
 const User = mongoose.model('User', userSchema);
 
@@ -46,13 +47,13 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', messageSchema);
 
-// API Key Schema (now supports customFrom)
+// API Key Schema (with customFrom)
 const apiKeySchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true },
-  createdBy: { type: String, required: true },
-  partnerName: { type: String, required: true }, // base for @unfiltereduk.co.uk
+  key: { type: String, required: true, unique: true }, // ukapi_...
+  createdBy: { type: String, required: true }, // admin email
+  partnerName: { type: String, required: true }, // for @unfiltereduk.co.uk
   customFrom: { 
-    type: String, 
+    type: String,
     validate: {
       validator: function(v) {
         if (!v) return true; // optional
@@ -67,7 +68,7 @@ const apiKeySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Unique index on partnerName and customFrom
+// Unique constraints
 apiKeySchema.index({ partnerName: 1 }, { unique: true });
 apiKeySchema.index({ customFrom: 1 }, { sparse: true, unique: true }); // only if set
 
@@ -77,7 +78,7 @@ const ApiKey = mongoose.model('ApiKey', apiKeySchema);
 function authenticateToken(req, res, next) {
   const auth = req.headers.authorization;
   const token = auth?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token provided.' });
+  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
@@ -96,18 +97,19 @@ async function isEmailTaken(email) {
   const normalized = email.toLowerCase().trim();
   const localPart = normalized.split('@')[0];
 
+  // Check user
   const user = await User.findOne({ email: normalized });
   if (user) return true;
 
-  const apiKey = await ApiKey.findOne({ 
+  // Check API: partnerName match or customFrom
+  const apiKey = await ApiKey.findOne({
     $or: [
       { partnerName: localPart },
       { customFrom: normalized }
     ]
   });
-  if (apiKey) return true;
 
-  return false;
+  return !!apiKey;
 }
 
 // 🔐 Register
@@ -141,7 +143,12 @@ app.post('/api/register', async (req, res) => {
 
   try {
     const hashed = await bcrypt.hash(password, 10);
-    const user = new User({ email: normalizedEmail, password: hashed, fullName: fullName.trim() });
+    const user = new User({ 
+      email: normalizedEmail, 
+      password: hashed, 
+      fullName: fullName.trim() 
+    });
+
     await user.save();
 
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -240,7 +247,7 @@ app.get('/api/user/email/:email', async (req, res) => {
   res.json(user);
 });
 
-// 🔑 Generate API Key (Admin Only) – Now supports customFrom
+// 🔑 Generate API Key (Admin Only) – with ukapi_ prefix
 app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
   if (!isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required.' });
@@ -263,17 +270,14 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Partner name must contain letters or numbers.' });
   }
 
-  // Default from
+  // Validate customFrom if provided
   let fromEmail = `${cleanName}@unfiltereduk.co.uk`;
-
-  // If customFrom provided
   if (customFrom && customFrom.trim()) {
     const normalized = customFrom.trim().toLowerCase();
     if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]+$/.test(normalized)) {
       return res.status(400).json({ error: 'Invalid custom email format.' });
     }
 
-    // Check if taken
     if (await isEmailTaken(normalized)) {
       return res.status(400).json({ error: `The email ${normalized} is already taken.` });
     }
@@ -281,6 +285,7 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
     fromEmail = normalized;
   }
 
+  // ✅ Keep ukapi_ prefix
   const key = 'ukapi_' + crypto.randomBytes(32).toString('hex');
   const expiresAt = expiresDays ? new Date(Date.now() + expiresDays * 86400000) : null;
 
