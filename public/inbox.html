@@ -76,7 +76,7 @@
       width: 250px;
       background: var(--card-bg);
       border-right: 1px solid var(--border);
-      padding-top: 60px; /* below topbar */
+      padding-top: 60px; /* Matches topbar height */
       position: fixed;
       height: 100vh;
       overflow-y: auto;
@@ -121,6 +121,8 @@
       display: flex;
       flex-direction: column;
       background: var(--bg);
+      padding-top: 60px; /* ✅ Push content below fixed topbar */
+      min-height: 100vh;
     }
 
     /* === Message List === */
@@ -197,7 +199,10 @@
       .sidebar-item i { margin-right: 0; }
       .message-sender, .message-snippet { display: none; }
       .message-subject { flex: 2; }
-      .main-content { margin-left: 60px; }
+      .main-content { 
+        margin-left: 60px; 
+        padding-top: 60px; 
+      }
       .message-time { font-size: 12px; }
     }
 
