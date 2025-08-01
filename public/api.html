@@ -14,6 +14,7 @@
       --error: #cf3339;
       --border: #333333;
       --hover-bg: #2a2a2a;
+      --code-bg: #1e2b33;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -44,9 +45,38 @@
     }
     button:hover { background: #9b68db; }
 
+    .key-display {
+      background: var(--code-bg);
+      padding: 16px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      color: #a0d8ff;
+      margin: 10px 0;
+      word-break: break-all;
+      position: relative;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #444;
+      color: white;
+      border: none;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background: #666;
+    }
+
     .key-list { margin-top: 30px; }
     .key-item {
-      background: #222; padding: 16px; border-radius: 8px; margin-bottom: 10px; font-size: 14px;
+      background: #222; padding: 16px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; position: relative;
     }
     .key-item strong { color: var(--accent); }
     .revoke { background: var(--error); margin-left: 10px; }
@@ -84,6 +114,16 @@
 
     <div id="status" class="status hidden"></div>
 
+    <!-- Show generated key -->
+    <div id="keyOutput" class="hidden">
+      <p><strong>Generated API Key:</strong></p>
+      <div class="key-display" id="apiKeyDisplay">
+        ukapi_...
+        <button class="copy-btn" onclick="copyKey()">Copy</button>
+      </div>
+      <p><small>⚠️ This key will not be shown again. Save it now.</small></p>
+    </div>
+
     <div class="key-list" id="keys"></div>
   </div>
 
@@ -96,6 +136,7 @@
       location.href = 'inbox.html';
     }
 
+    // Show generated key
     async function generateKey() {
       const partnerName = document.getElementById('partnerName').value;
       const customFrom = document.getElementById('customFrom').value || null;
@@ -112,16 +153,38 @@
 
       const data = await res.json();
       if (res.ok) {
-        setStatus(`✅ Key generated: ${data.fromEmail}`, false);
+        // ✅ Show the actual API key
+        document.getElementById('apiKeyDisplay').textContent = data.key;
+        document.getElementById('keyOutput').classList.remove('hidden');
+
+        // Reset form
         document.getElementById('partnerName').value = '';
         document.getElementById('customFrom').value = '';
         document.getElementById('expiresDays').value = '';
+
+        // Hide status after 5s
+        setStatus(`✅ Key generated.`, false);
+        setTimeout(() => document.getElementById('status').classList.add('hidden'), 5000);
+
+        // Reload key list
         loadKeys();
       } else {
         setStatus('❌ ' + data.error, true);
       }
     }
 
+    // Copy key to clipboard
+    function copyKey() {
+      const key = document.getElementById('apiKeyDisplay').textContent.replace('Copy', '').trim();
+      navigator.clipboard.writeText(key).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = original, 2000);
+      });
+    }
+
+    // Load existing keys (masked)
     async function loadKeys() {
       const res = await fetch('/api/admin/keys', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -135,12 +198,13 @@
 
       keys.forEach(k => {
         const from = k.customFrom || `${k.partnerName}@unfiltereduk.co.uk`;
+        const maskedKey = k.key.substring(0, 16) + '...'; // Masked display
+
         const div = document.createElement('div');
         div.className = 'key-item';
         div.innerHTML = `
           <div><strong>From:</strong> ${from}</div>
-          <div><strong>Partner:</strong> ${k.partnerName}</div>
-          <div><strong>Key:</strong> ${k.key.substring(0, 12)}...</div>
+          <div><strong>Key:</strong> <span style="font-family:monospace; background:#333; padding:2px 4px; border-radius:4px;">${maskedKey}</span></div>
           <div><strong>Created:</strong> ${new Date(k.createdAt).toLocaleString()}</div>
           <div><strong>Expires:</strong> ${k.expiresAt ? new Date(k.expiresAt).toLocaleString() : 'Never'}</div>
           <button class="revoke" onclick="revokeKey('${k.key}')">Revoke</button>
@@ -149,6 +213,7 @@
       });
     }
 
+    // Revoke key
     async function revokeKey(key) {
       if (!confirm('Revoke this API key?')) return;
 
@@ -169,6 +234,7 @@
       }
     }
 
+    // Show status message
     function setStatus(msg, error = true) {
       const el = document.getElementById('status');
       el.textContent = msg;
@@ -177,11 +243,13 @@
       setTimeout(() => el.classList.add('hidden'), 5000);
     }
 
+    // Logout
     function logout() {
       localStorage.clear();
       location.href = 'index.html';
     }
 
+    // On load
     window.onload = loadKeys;
   </script>
 </body>
