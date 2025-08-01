@@ -5,46 +5,231 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Reply | unfiltereduk.co.uk</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #fff; color: #1a1a1a; }
-    header { padding: 20px 0; border-bottom: 1px solid #eee; }
-    header .container { max-width: 1000px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 28px; }
-    header h1 span { color: #c00; }
-    nav a { margin-left: 16px; color: #c00; text-decoration: none; font-weight: 500; }
-    main.container { padding: 40px 20px; max-width: 800px; margin: 0 auto; }
-    input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-    textarea { min-height: 200px; }
-    button { background: #c00; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 10px; }
-    .status {
-      padding: 12px; margin: 15px 0; border-radius: 6px; text-align: center; font-size: 14px;
+    /* === Global Dark Theme === */
+    :root {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --text: #e0e0e0;
+      --text-secondary: #aaaaaa;
+      --border: #333333;
+      --accent: #bb86fc;
+      --error: #cf3339;
+      --hover-bg: #2a2a2a;
+      --toolbar-bg: #1f1f1f;
+      --input-bg: #2a2a2a;
     }
-    .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    .hidden { display: none; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* === Topbar === */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .logo span {
+      color: var(--error);
+    }
+
+    .topbar nav a {
+      margin-left: 18px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .topbar nav a:hover {
+      text-decoration: underline;
+    }
+
+    /* === Main Layout === */
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* === Recipient Bar with Avatar === */
+    .recipient-bar {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--input-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .recipient-info {
+      flex: 1;
+    }
+
+    .recipient-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .recipient-email {
+      font-size: 16px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* === Inputs === */
+    input, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      margin: 8px 0;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    textarea {
+      min-height: 200px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    /* === Action Buttons === */
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #9b68db;
+    }
+
+    /* === Status Message === */
+    .status {
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background: #3a1818;
+      color: var(--error);
+      border: 1px solid var(--error);
+    }
+
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="container">
-      <h1>unfiltered<span>uk</span>.co.uk</h1>
-      <nav>
-        <a href="inbox.html">Inbox</a>
-        <a href="profile.html">Profile</a>
-        <a href="settings.html">Settings</a>
-        <a href="#" onclick="logout()">Logout</a>
-      </nav>
-    </div>
-  </header>
 
-  <main class="container">
-    <h2>Reply</h2>
-    <input type="email" id="to" placeholder="To" readonly />
-    <input type="text" id="subject" placeholder="Subject" />
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">unfiltered<span>uk</span>.co.uk</div>
+    <nav>
+      <a href="inbox.html">Inbox</a>
+      <a href="profile.html">Profile</a>
+      <a href="settings.html">Settings</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+    <h2>Compose Reply</h2>
+
+    <!-- Recipient with Avatar -->
+    <div class="recipient-bar">
+      <img id="avatar" class="avatar" src="https://via.placeholder.com/40" alt="Avatar">
+      <div class="recipient-info">
+        <div class="recipient-label">To</div>
+        <div class="recipient-email" id="to-email">Loading...</div>
+      </div>
+    </div>
+
+    <input type="text" id="subject" placeholder="Subject" readonly />
+
     <textarea id="body" placeholder="Your message..."></textarea>
-    <button onclick="sendMessage()">Send</button>
+
+    <div class="actions">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+
     <div id="status" class="status hidden"></div>
-  </main>
+  </div>
 
   <script>
     const token = localStorage.getItem('token');
@@ -54,16 +239,42 @@
     const to = decodeURIComponent(params.get('to') || '');
     const subject = decodeURIComponent(params.get('subject') || '');
 
-    document.getElementById('to').value = to;
-    document.getElementById('subject').value = subject;
+    // Populate fields
+    document.getElementById('to-email').textContent = to;
+    document.getElementById('subject').value = subject.startsWith('Re: ') ? subject : `Re: ${subject}`;
 
+    // Fetch sender profile to get avatar
+    async function loadSenderProfile() {
+      try {
+        const res = await fetch(`/api/user/email/${encodeURIComponent(to)}`);
+        if (res.ok) {
+          const user = await res.json();
+          const avatarImg = document.getElementById('avatar');
+          if (user.avatar) {
+            avatarImg.src = user.avatar;
+          } else {
+            // Fallback: Initials
+            const parts = user.fullName?.split(' ') || [to.split('@')[0]];
+            const initials = parts.map(p => p[0]).join('').toUpperCase().substring(0, 2);
+            avatarImg.src = 'https://via.placeholder.com/40';
+            avatarImg.style.background = '#777';
+            avatarImg.textContent = initials;
+            avatarImg.style.color = 'white';
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load sender profile:', err);
+      }
+    }
+
+    // Send message
     async function sendMessage() {
-      const to = document.getElementById('to').value;
+      const to = document.getElementById('to-email').textContent;
       const subject = document.getElementById('subject').value;
       const body = document.getElementById('body').value;
 
-      if (!to || !subject || !body) {
-        return setStatus('All fields required.', true);
+      if (!to || !subject || !body.trim()) {
+        return setStatus('All fields are required.', true);
       }
 
       const res = await fetch('/api/send', {
@@ -76,15 +287,17 @@
       });
 
       if (res.ok) {
-        setStatus('Message sent!', false);
-        document.getElementById('to').value = '';
-        document.getElementById('subject').value = '';
-        document.getElementById('body').value = '';
+        setStatus('✅ Message sent!', false);
+        setTimeout(() => {
+          location.href = 'inbox.html';
+        }, 1000);
       } else {
-        setStatus('Send failed.', true);
+        const data = await res.json();
+        setStatus('❌ Send failed: ' + (data.error || 'Unknown error'), true);
       }
     }
 
+    // Show status
     function setStatus(msg, error = false) {
       const el = document.getElementById('status');
       el.textContent = msg;
@@ -93,10 +306,16 @@
       setTimeout(() => el.classList.add('hidden'), 4000);
     }
 
+    // Logout
     function logout() {
       localStorage.clear();
       location.href = 'index.html';
     }
+
+    // On load
+    window.onload = () => {
+      loadSenderProfile();
+    };
   </script>
 </body>
 </html>
