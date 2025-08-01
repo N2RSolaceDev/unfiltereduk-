@@ -6,12 +6,10 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
-
+const xss = require('xss'); // 🔒 For sanitizing HTML input
 const app = express();
 
 // 🔒 Rate Limiters
-
-// General API limiter (for non-authenticated routes)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
@@ -20,18 +18,16 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Auth-specific limiter (more strict)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per IP
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: { error: 'Too many login/register attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Admin route limiter
 const adminLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000,
   max: 20,
   message: { error: 'Too many requests to admin routes.' },
   standardHeaders: true,
@@ -39,9 +35,9 @@ const adminLimiter = rateLimit({
 });
 
 // Apply rate limits
-app.use('/api/auth/', authLimiter); // Covers login & register
+app.use('/api/auth/', authLimiter);
 app.use('/api/admin/', adminLimiter);
-app.use('/api/', apiLimiter); // All other /api/ routes
+app.use('/api/', apiLimiter);
 
 // General middleware
 app.use(cors());
@@ -67,7 +63,6 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Unique index on email
 userSchema.index({ email: 1 }, { unique: true });
 const User = mongoose.model('User', userSchema);
 
@@ -76,15 +71,20 @@ const messageSchema = new mongoose.Schema({
   from: { type: String, required: true },
   to: { type: String, required: true },
   subject: String,
-  body: String,
+  body: { 
+    type: String, 
+    required: true 
+    // Can now contain sanitized HTML
+  },
   read: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
+
 const Message = mongoose.model('Message', messageSchema);
 
-// API Key Schema (with avatar)
+// API Key Schema
 const apiKeySchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true }, // ukapi_...
+  key: { type: String, required: true, unique: true },
   createdBy: { type: String, required: true },
   partnerName: { type: String, required: true },
   customFrom: { 
@@ -113,7 +113,6 @@ const apiKeySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Unique constraints
 apiKeySchema.index({ partnerName: 1 }, { unique: true });
 apiKeySchema.index({ customFrom: 1 }, { sparse: true, unique: true });
 const ApiKey = mongoose.model('ApiKey', apiKeySchema);
@@ -217,12 +216,17 @@ app.post('/api/profile', authenticateToken, async (req, res) => {
   res.json({ message: 'Profile updated.' });
 });
 
-// 📨 Send Message
+// 📨 Send Message (Supports HTML)
 app.post('/api/send', authenticateToken, async (req, res) => {
   const { to, subject, body } = req.body;
   const from = req.user.email;
+
   if (!to || !body) return res.status(400).json({ error: 'All fields required.' });
-  const msg = new Message({ from, to, subject, body });
+
+  // Sanitize HTML content
+  const sanitizedBody = xss(body);
+
+  const msg = new Message({ from, to, subject, body: sanitizedBody });
   await msg.save();
   res.json({ message: 'Sent' });
 });
@@ -278,14 +282,12 @@ app.get('/api/user/email/:email', async (req, res) => {
     revoked: false,
     $expr: { $lt: ["$expiresAt", new Date()] }
   });
-
   if (apiKey && !apiKey.revoked && (!apiKey.expiresAt || apiKey.expiresAt > new Date())) {
     return res.json({
       fullName: apiKey.partnerName.charAt(0).toUpperCase() + apiKey.partnerName.slice(1),
       avatar: apiKey.avatar || null
     });
   }
-
   const user = await User.findOne({ email }).select('fullName avatar');
   if (user) return res.json(user);
   res.status(404).json({ error: 'User not found.' });
@@ -371,20 +373,26 @@ app.post('/api/admin/revoke-key', authenticateToken, adminLimiter, async (req, r
   res.json({ message: 'API key revoked.' });
 });
 
-// 🤖 Send Automated Email (via API Key)
+// 🤖 Send Automated Email (via API Key) - Supports HTML
 app.post('/api/automated-send', apiLimiter, async (req, res) => {
   const { key, to, subject, body } = req.body;
   if (!key || !to || !subject || !body) {
     return res.status(400).json({ error: 'API key and all fields required.' });
   }
+
   const apiKey = await ApiKey.findOne({ key });
   if (!apiKey) return res.status(403).json({ error: 'Invalid API key.' });
   if (apiKey.revoked) return res.status(403).json({ error: 'API key revoked.' });
   if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
     return res.status(403).json({ error: 'API key expired.' });
   }
+
   const from = apiKey.customFrom || `${apiKey.partnerName}@unfiltereduk.co.uk`;
-  const msg = new Message({ from, to, subject, body });
+
+  // Sanitize HTML content
+  const sanitizedBody = xss(body);
+
+  const msg = new Message({ from, to, subject, body: sanitizedBody });
   await msg.save();
   res.json({ message: 'Automated email sent.', from });
 });
