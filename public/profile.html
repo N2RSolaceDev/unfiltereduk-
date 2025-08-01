@@ -4,7 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Profile | unfiltereduk.co.uk</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #fff; }
+    header { padding: 20px 0; border-bottom: 1px solid #eee; }
+    header .container { max-width: 1000px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 28px; }
+    header h1 span { color: #c00; }
+    nav a { margin-left: 16px; color: #c00; text-decoration: none; font-weight: 500; }
+    main.container { padding: 40px 20px; max-width: 600px; margin: 0 auto; text-align: center; }
+    .avatar-large { width: 100px; height: 100px; border-radius: 50%; margin: 20px auto; display: block; }
+    input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+    button { background: #c00; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 20px; }
+    .status {
+      padding: 12px; margin: 15px 0; border-radius: 6px; text-align: center; font-size: 14px;
+    }
+    .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
   <header>
@@ -27,6 +45,58 @@
     <div id="status" class="status hidden"></div>
   </main>
 
-  <script src="js/profile.js"></script>
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = 'login.html';
+
+    async function loadProfile() {
+      const res = await fetch('/api/profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!res.ok) return logout();
+
+      const user = await res.json();
+      document.getElementById('fullName').value = user.fullName || '';
+      document.getElementById('avatar').value = user.avatar || '';
+      document.getElementById('avatarPreview').src = user.avatar || 'https://via.placeholder.com/100';
+    }
+
+    async function saveProfile() {
+      const fullName = document.getElementById('fullName').value;
+      const avatar = document.getElementById('avatar').value;
+
+      const res = await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ fullName, avatar })
+      });
+
+      if (res.ok) {
+        document.getElementById('avatarPreview').src = avatar || 'https://via.placeholder.com/100';
+        setStatus('Profile saved!', false);
+      } else {
+        setStatus('Save failed.', true);
+      }
+    }
+
+    function setStatus(msg, error = false) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = error ? 'status error' : 'status success';
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 4000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      location.href = 'index.html';
+    }
+
+    window.onload = loadProfile;
+  </script>
 </body>
 </html>
