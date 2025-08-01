@@ -5,26 +5,159 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Compose | unfiltereduk.co.uk</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #fff; }
-    header { padding: 20px 0; border-bottom: 1px solid #eee; }
-    header .container { max-width: 1000px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 28px; }
-    header h1 span { color: #c00; }
-    nav a { margin-left: 16px; color: #c00; text-decoration: none; font-weight: 500; }
-    main.container { padding: 40px 20px; max-width: 800px; margin: 0 auto; }
-    input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-    textarea { min-height: 200px; }
-    button { background: #c00; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 10px; }
-    .status {
-      padding: 12px; margin: 15px 0; border-radius: 6px; text-align: center; font-size: 14px;
+    /* === Global Dark Theme === */
+    :root {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --text: #e0e0e0;
+      --text-secondary: #aaaaaa;
+      --border: #333333;
+      --accent: #bb86fc;
+      --error: #cf3339;
+      --hover-bg: #2a2a2a;
+      --toolbar-bg: #1f1f1f;
+      --input-bg: #2a2a2a;
     }
-    .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    .hidden { display: none; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* === Header === */
+    header {
+      padding: 15px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    header h1 span {
+      color: var(--error);
+    }
+
+    nav a {
+      margin-left: 18px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 15px;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    /* === Main Content === */
+    main.container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* === Inputs === */
+    input, textarea {
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.2);
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    /* === Send Button === */
+    button {
+      background: var(--accent);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background: #9b68db;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    /* === Status Message === */
+    .status {
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: #2a4a30;
+      color: #a0dba0;
+      border: 1px solid #2d5e35;
+    }
+
+    .status.error {
+      background: #3a1818;
+      color: var(--error);
+      border: 1px solid var(--error);
+    }
+
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Header -->
   <header>
     <div class="container">
       <h1>unfiltered<span>uk</span>.co.uk</h1>
@@ -37,6 +170,7 @@
     </div>
   </header>
 
+  <!-- Main Content -->
   <main class="container">
     <h2>Compose Message</h2>
     <input type="email" id="to" placeholder="To" />
@@ -51,12 +185,12 @@
     if (!token) location.href = 'login.html';
 
     async function sendMessage() {
-      const to = document.getElementById('to').value;
-      const subject = document.getElementById('subject').value;
-      const body = document.getElementById('body').value;
+      const to = document.getElementById('to').value.trim();
+      const subject = document.getElementById('subject').value.trim();
+      const body = document.getElementById('body').value.trim();
 
       if (!to || !subject || !body) {
-        return setStatus('All fields required.', true);
+        return setStatus('All fields are required.', true);
       }
 
       const res = await fetch('/api/send', {
@@ -69,12 +203,13 @@
       });
 
       if (res.ok) {
-        setStatus('Message sent!', false);
+        setStatus('✅ Message sent!', false);
         document.getElementById('to').value = '';
         document.getElementById('subject').value = '';
         document.getElementById('body').value = '';
       } else {
-        setStatus('Send failed.', true);
+        const data = await res.json();
+        setStatus('❌ Send failed: ' + (data.error || 'Unknown error'), true);
       }
     }
 
