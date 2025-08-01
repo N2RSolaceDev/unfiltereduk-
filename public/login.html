@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login | unfiltereduk.co.uk</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-box">
+      <h2>Welcome Back</h2>
+      <p>Sign in to your @unfiltereduk.co.uk account</p>
+
+      <input type="email" id="email" placeholder="you@unfiltereduk.co.uk" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <p class="text-center">
+        New here? <a href="register.html">Create Account</a>
+      </p>
+      <div id="status" class="status hidden"></div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>
