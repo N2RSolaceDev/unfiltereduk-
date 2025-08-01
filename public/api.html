@@ -70,9 +70,7 @@
       cursor: pointer;
     }
 
-    .copy-btn:hover {
-      background: #666;
-    }
+    .copy-btn:hover { background: #666; }
 
     .key-list { margin-top: 30px; }
     .key-item {
@@ -104,10 +102,11 @@
   <!-- Main -->
   <div class="container">
     <h2>API Key Management</h2>
-    <p>Create keys for partners. Optionally allow custom sender domains.</p>
+    <p>Create keys for partners. Optionally set a custom sender and avatar.</p>
 
     <input type="text" id="partnerName" placeholder="Partner Name (e.g., NewsCorp)" />
-    <input type="email" id="customFrom" placeholder="Custom From Email (optional, e.g., hello@news.com)" />
+    <input type="email" id="customFrom" placeholder="Custom From Email (optional)" />
+    <input type="url" id="avatar" placeholder="Avatar URL (optional, .jpg, .png)" />
     <input type="number" id="expiresDays" placeholder="Auto-expire in days (optional)" min="1" />
 
     <button onclick="generateKey()">Generate API Key</button>
@@ -136,10 +135,10 @@
       location.href = 'inbox.html';
     }
 
-    // Show generated key
     async function generateKey() {
       const partnerName = document.getElementById('partnerName').value;
       const customFrom = document.getElementById('customFrom').value || null;
+      const avatar = document.getElementById('avatar').value || null;
       const expiresDays = document.getElementById('expiresDays').value || null;
 
       const res = await fetch('/api/admin/generate-key', {
@@ -148,32 +147,26 @@
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ partnerName, customFrom, expiresDays })
+        body: JSON.stringify({ partnerName, customFrom, avatar, expiresDays })
       });
 
       const data = await res.json();
       if (res.ok) {
-        // ✅ Show the actual API key
         document.getElementById('apiKeyDisplay').textContent = data.key;
         document.getElementById('keyOutput').classList.remove('hidden');
-
-        // Reset form
         document.getElementById('partnerName').value = '';
         document.getElementById('customFrom').value = '';
+        document.getElementById('avatar').value = '';
         document.getElementById('expiresDays').value = '';
 
-        // Hide status after 5s
         setStatus(`✅ Key generated.`, false);
         setTimeout(() => document.getElementById('status').classList.add('hidden'), 5000);
-
-        // Reload key list
         loadKeys();
       } else {
         setStatus('❌ ' + data.error, true);
       }
     }
 
-    // Copy key to clipboard
     function copyKey() {
       const key = document.getElementById('apiKeyDisplay').textContent.replace('Copy', '').trim();
       navigator.clipboard.writeText(key).then(() => {
@@ -184,7 +177,6 @@
       });
     }
 
-    // Load existing keys (masked)
     async function loadKeys() {
       const res = await fetch('/api/admin/keys', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -198,13 +190,14 @@
 
       keys.forEach(k => {
         const from = k.customFrom || `${k.partnerName}@unfiltereduk.co.uk`;
-        const maskedKey = k.key.substring(0, 16) + '...'; // Masked display
+        const maskedKey = k.key.substring(0, 16) + '...';
 
         const div = document.createElement('div');
         div.className = 'key-item';
         div.innerHTML = `
           <div><strong>From:</strong> ${from}</div>
           <div><strong>Key:</strong> <span style="font-family:monospace; background:#333; padding:2px 4px; border-radius:4px;">${maskedKey}</span></div>
+          <div><strong>Avatar:</strong> ${k.avatar ? `<img src="${k.avatar}" width="20" style="vertical-align:middle; border-radius:50%;">` : 'None'}</div>
           <div><strong>Created:</strong> ${new Date(k.createdAt).toLocaleString()}</div>
           <div><strong>Expires:</strong> ${k.expiresAt ? new Date(k.expiresAt).toLocaleString() : 'Never'}</div>
           <button class="revoke" onclick="revokeKey('${k.key}')">Revoke</button>
@@ -213,7 +206,6 @@
       });
     }
 
-    // Revoke key
     async function revokeKey(key) {
       if (!confirm('Revoke this API key?')) return;
 
@@ -234,7 +226,6 @@
       }
     }
 
-    // Show status message
     function setStatus(msg, error = true) {
       const el = document.getElementById('status');
       el.textContent = msg;
@@ -243,13 +234,11 @@
       setTimeout(() => el.classList.add('hidden'), 5000);
     }
 
-    // Logout
     function logout() {
       localStorage.clear();
       location.href = 'index.html';
     }
 
-    // On load
     window.onload = loadKeys;
   </script>
 </body>
