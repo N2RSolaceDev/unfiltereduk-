@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile | unfiltereduk.co.uk</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>unfiltered<span>uk</span>.co.uk</h1>
+      <nav>
+        <a href="inbox.html">Inbox</a>
+        <a href="settings.html">Settings</a>
+        <a href="#" onclick="logout()">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2>Your Profile</h2>
+    <img id="avatarPreview" src="https://via.placeholder.com/100" alt="Avatar" class="avatar-large" />
+    <input type="url" id="avatar" placeholder="Avatar URL" />
+    <input type="text" id="fullName" placeholder="Full Name" />
+    <button onclick="saveProfile()">Save Profile</button>
+    <div id="status" class="status hidden"></div>
+  </main>
+
+  <script src="js/profile.js"></script>
+</body>
+</html>
