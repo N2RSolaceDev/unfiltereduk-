@@ -12,11 +12,12 @@
     "jsonwebtoken": "^9.0.2",
     "dotenv": "^16.4.5",
     "cors": "^2.8.5",
-    "express-rate-limit": "^7.3.1"
+    "express-rate-limit": "^7.3.1",
+    "xss": "^1.0.14"  
   },
   "engines": {
     "node": "20.x"
   },
-  "description": "Secure internal messaging platform for unfiltereduk.co.uk",
+  "description": "Secure internal messaging platform for unfiltereduk.co.uk with support for HTML-formatted emails",
   "license": "MIT"
 }
