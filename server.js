@@ -5,10 +5,45 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-// Middleware
+// 🔒 Rate Limiters
+
+// General API limiter (for non-authenticated routes)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: { error: 'Too many requests from this IP, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Auth-specific limiter (more strict)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per IP
+  message: { error: 'Too many login/register attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Admin route limiter
+const adminLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  message: { error: 'Too many requests to admin routes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limits
+app.use('/api/auth/', authLimiter); // Covers login & register
+app.use('/api/admin/', adminLimiter);
+app.use('/api/', apiLimiter); // All other /api/ routes
+
+// General middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
@@ -81,7 +116,6 @@ const apiKeySchema = new mongoose.Schema({
 // Unique constraints
 apiKeySchema.index({ partnerName: 1 }, { unique: true });
 apiKeySchema.index({ customFrom: 1 }, { sparse: true, unique: true });
-
 const ApiKey = mongoose.model('ApiKey', apiKeySchema);
 
 // Middleware: Authenticate Token
@@ -89,7 +123,6 @@ function authenticateToken(req, res, next) {
   const auth = req.headers.authorization;
   const token = auth?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
-
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
     req.user = user;
@@ -106,49 +139,41 @@ function isAdmin(email) {
 async function isEmailTaken(email) {
   const normalized = email.toLowerCase().trim();
   const localPart = normalized.split('@')[0];
-
   const user = await User.findOne({ email: normalized });
   if (user) return true;
-
   const apiKey = await ApiKey.findOne({
     $or: [
       { partnerName: localPart },
       { customFrom: normalized }
     ]
   });
-
   return !!apiKey;
 }
 
 // 🔐 Register
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', authLimiter, async (req, res) => {
   const { email, password, fullName } = req.body;
   const normalizedEmail = email.toLowerCase().trim();
-
   if (!normalizedEmail.endsWith('@unfiltereduk.co.uk')) {
     return res.status(400).json({ 
       error: 'Only @unfiltereduk.co.uk email addresses are allowed.' 
     });
   }
-
   if (await isEmailTaken(normalizedEmail)) {
     return res.status(400).json({ 
       error: 'This email or identity is already taken.' 
     });
   }
-
   if (!password || password.length < 6) {
     return res.status(400).json({ 
       error: 'Password must be at least 6 characters.' 
     });
   }
-
   if (!fullName || fullName.trim().length === 0) {
     return res.status(400).json({ 
       error: 'Full name is required.' 
     });
   }
-
   try {
     const hashed = await bcrypt.hash(password, 10);
     const user = new User({ 
@@ -156,9 +181,7 @@ app.post('/api/register', async (req, res) => {
       password: hashed, 
       fullName: fullName.trim() 
     });
-
     await user.save();
-
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, email: user.email });
   } catch (err) {
@@ -170,14 +193,12 @@ app.post('/api/register', async (req, res) => {
 });
 
 // 🔐 Login
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) return res.status(400).json({ error: 'Invalid credentials.' });
-
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(400).json({ error: 'Invalid credentials.' });
-
   const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
   res.json({ token, email: user.email });
 });
@@ -200,9 +221,7 @@ app.post('/api/profile', authenticateToken, async (req, res) => {
 app.post('/api/send', authenticateToken, async (req, res) => {
   const { to, subject, body } = req.body;
   const from = req.user.email;
-
   if (!to || !body) return res.status(400).json({ error: 'All fields required.' });
-
   const msg = new Message({ from, to, subject, body });
   await msg.save();
   res.json({ message: 'Sent' });
@@ -234,7 +253,6 @@ app.delete('/api/delete/:id', authenticateToken, async (req, res) => {
 app.delete('/api/delete-account', authenticateToken, async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
-
   try {
     await Message.deleteMany({ $or: [{ from: req.user.email }, { to: req.user.email }] }, { session });
     await User.deleteOne({ email: req.user.email }, { session });
@@ -251,8 +269,6 @@ app.delete('/api/delete-account', authenticateToken, async (req, res) => {
 // 🔍 Get User by Email (supports user and API)
 app.get('/api/user/email/:email', async (req, res) => {
   const email = req.params.email.toLowerCase();
-
-  // Check if it's an API sender
   const localPart = email.split('@')[0];
   const apiKey = await ApiKey.findOne({ 
     $or: [
@@ -270,57 +286,44 @@ app.get('/api/user/email/:email', async (req, res) => {
     });
   }
 
-  // Else check user
   const user = await User.findOne({ email }).select('fullName avatar');
   if (user) return res.json(user);
-
   res.status(404).json({ error: 'User not found.' });
 });
 
 // 🔑 Generate API Key (Admin Only)
-app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
+app.post('/api/admin/generate-key', authenticateToken, adminLimiter, async (req, res) => {
   if (!isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
-
   const { partnerName, customFrom, avatar, expiresDays } = req.body;
-
   if (!partnerName || !partnerName.trim()) {
     return res.status(400).json({ error: 'Partner name is required.' });
   }
-
   const cleanName = partnerName
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
     .substring(0, 20);
-
   if (!cleanName) {
     return res.status(400).json({ error: 'Partner name must contain letters or numbers.' });
   }
-
   let fromEmail = `${cleanName}@unfiltereduk.co.uk`;
   if (customFrom && customFrom.trim()) {
     const normalized = customFrom.trim().toLowerCase();
     if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]+$/.test(normalized)) {
       return res.status(400).json({ error: 'Invalid custom email format.' });
     }
-
     if (await isEmailTaken(normalized)) {
       return res.status(400).json({ error: `The email ${normalized} is already taken.` });
     }
-
     fromEmail = normalized;
   }
-
-  // Validate avatar URL
   if (avatar && !/^(https?:\/\/).*\.(jpg|jpeg|png|webp|gif)$/i.test(avatar)) {
     return res.status(400).json({ error: 'Invalid image URL format.' });
   }
-
   const key = 'ukapi_' + crypto.randomBytes(32).toString('hex');
   const expiresAt = expiresDays ? new Date(Date.now() + expiresDays * 86400000) : null;
-
   const apiKey = new ApiKey({
     key,
     createdBy: req.user.email,
@@ -330,7 +333,6 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
     expiresAt,
     permissions: ['send']
   });
-
   try {
     await apiKey.save();
     res.json({ 
@@ -350,21 +352,19 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
 });
 
 // 📋 List API Keys
-app.get('/api/admin/keys', authenticateToken, async (req, res) => {
+app.get('/api/admin/keys', authenticateToken, adminLimiter, async (req, res) => {
   if (!isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
-
   const keys = await ApiKey.find({ revoked: false }).sort({ createdAt: -1 });
   res.json(keys);
 });
 
 // 🚫 Revoke API Key
-app.post('/api/admin/revoke-key', authenticateToken, async (req, res) => {
+app.post('/api/admin/revoke-key', authenticateToken, adminLimiter, async (req, res) => {
   if (!isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
-
   const { key } = req.body;
   const result = await ApiKey.updateOne({ key }, { revoked: true });
   if (result.matchedCount === 0) return res.status(404).json({ error: 'Key not found.' });
@@ -372,21 +372,18 @@ app.post('/api/admin/revoke-key', authenticateToken, async (req, res) => {
 });
 
 // 🤖 Send Automated Email (via API Key)
-app.post('/api/automated-send', async (req, res) => {
+app.post('/api/automated-send', apiLimiter, async (req, res) => {
   const { key, to, subject, body } = req.body;
   if (!key || !to || !subject || !body) {
     return res.status(400).json({ error: 'API key and all fields required.' });
   }
-
   const apiKey = await ApiKey.findOne({ key });
   if (!apiKey) return res.status(403).json({ error: 'Invalid API key.' });
   if (apiKey.revoked) return res.status(403).json({ error: 'API key revoked.' });
   if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
     return res.status(403).json({ error: 'API key expired.' });
   }
-
   const from = apiKey.customFrom || `${apiKey.partnerName}@unfiltereduk.co.uk`;
-
   const msg = new Message({ from, to, subject, body });
   await msg.save();
   res.json({ message: 'Automated email sent.', from });
