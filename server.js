@@ -10,28 +10,40 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 
 // 🔒 Rate Limiters
-const authLimiter = rateLimit({
+
+// General API limiter (for non-authenticated routes)
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per IP
-  message: { error: 'Too many login attempts. Please try again later.' },
+  max: 100,
+  message: { error: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { error: 'Too many requests from this IP.' },
+// Auth-specific limiter (more strict)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per IP
+  message: { error: 'Too many login/register attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Admin route limiter
+const adminLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  message: { error: 'Too many requests to admin routes.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 // Apply rate limits
-app.use('/api/login', authLimiter);
-app.use('/api/register', authLimiter);
-app.use('/api/', apiLimiter);
+app.use('/api/auth/', authLimiter); // Covers login & register
+app.use('/api/admin/', adminLimiter);
+app.use('/api/', apiLimiter); // All other /api/ routes
 
-// Middleware
+// General middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
@@ -43,8 +55,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 // User Schema
 const userSchema = new mongoose.Schema({
-  email: {
-    type: String,
+  email: { 
+    type: String, 
     required: true,
     lowercase: true,
     match: [/^[^\s@]+@unfiltereduk\.co\.uk$/, 'Invalid email format']
@@ -54,6 +66,8 @@ const userSchema = new mongoose.Schema({
   avatar: String,
   createdAt: { type: Date, default: Date.now }
 });
+
+// Unique index on email
 userSchema.index({ email: 1 }, { unique: true });
 const User = mongoose.model('User', userSchema);
 
@@ -68,12 +82,12 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', messageSchema);
 
-// API Key Schema
+// API Key Schema (with avatar)
 const apiKeySchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true },
+  key: { type: String, required: true, unique: true }, // ukapi_...
   createdBy: { type: String, required: true },
   partnerName: { type: String, required: true },
-  customFrom: {
+  customFrom: { 
     type: String,
     validate: {
       validator: function(v) {
@@ -98,6 +112,8 @@ const apiKeySchema = new mongoose.Schema({
   revoked: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
+
+// Unique constraints
 apiKeySchema.index({ partnerName: 1 }, { unique: true });
 apiKeySchema.index({ customFrom: 1 }, { sparse: true, unique: true });
 const ApiKey = mongoose.model('ApiKey', apiKeySchema);
@@ -119,7 +135,7 @@ function isAdmin(email) {
   return email === 'solace@unfiltereduk.co.uk';
 }
 
-// Check if email is taken by user OR API
+// 🔐 Check if email is taken by user OR API
 async function isEmailTaken(email) {
   const normalized = email.toLowerCase().trim();
   const localPart = normalized.split('@')[0];
@@ -134,61 +150,36 @@ async function isEmailTaken(email) {
   return !!apiKey;
 }
 
-// Verify reCAPTCHA token
-async function verifyRecaptcha(token) {
-  const secretKey = process.env.RECAPTCHA_SECRET || '6LcFapcrAAAAAEt5CypDMw0g2dxJq3mrRicW9Z_X';
-  const url = 'https://www.google.com/recaptcha/api/siteverify';
-  const formData = `secret=${secretKey}&response=${token}`;
-
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData
-    });
-
-    const data = await res.json();
-    return data.success;
-  } catch (err) {
-    console.error('reCAPTCHA verification error:', err);
-    return false;
-  }
-}
-
-// 🔐 Register (with reCAPTCHA)
-app.post('/api/register', async (req, res) => {
-  const { email, password, fullName, recaptchaToken } = req.body;
-
-  // Validate reCAPTCHA
-  if (!recaptchaToken) {
-    return res.status(400).json({ error: 'reCAPTCHA is required.' });
-  }
-  const isCaptchaValid = await verifyRecaptcha(recaptchaToken);
-  if (!isCaptchaValid) {
-    return res.status(400).json({ error: 'reCAPTCHA validation failed. Please try again.' });
-  }
-
-  // Existing validation
+// 🔐 Register
+app.post('/api/register', authLimiter, async (req, res) => {
+  const { email, password, fullName } = req.body;
   const normalizedEmail = email.toLowerCase().trim();
   if (!normalizedEmail.endsWith('@unfiltereduk.co.uk')) {
-    return res.status(400).json({ error: 'Only @unfiltereduk.co.uk email addresses are allowed.' });
+    return res.status(400).json({ 
+      error: 'Only @unfiltereduk.co.uk email addresses are allowed.' 
+    });
   }
   if (await isEmailTaken(normalizedEmail)) {
-    return res.status(400).json({ error: 'This email or identity is already taken.' });
+    return res.status(400).json({ 
+      error: 'This email or identity is already taken.' 
+    });
   }
   if (!password || password.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    return res.status(400).json({ 
+      error: 'Password must be at least 6 characters.' 
+    });
   }
   if (!fullName || fullName.trim().length === 0) {
-    return res.status(400).json({ error: 'Full name is required.' });
+    return res.status(400).json({ 
+      error: 'Full name is required.' 
+    });
   }
-
   try {
     const hashed = await bcrypt.hash(password, 10);
-    const user = new User({
-      email: normalizedEmail,
-      password: hashed,
-      fullName: fullName.trim()
+    const user = new User({ 
+      email: normalizedEmail, 
+      password: hashed, 
+      fullName: fullName.trim() 
     });
     await user.save();
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -201,25 +192,13 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// 🔐 Login (with reCAPTCHA)
-app.post('/api/login', async (req, res) => {
-  const { email, password, recaptchaToken } = req.body;
-
-  // Validate reCAPTCHA
-  if (!recaptchaToken) {
-    return res.status(400).json({ error: 'reCAPTCHA is required.' });
-  }
-  const isCaptchaValid = await verifyRecaptcha(recaptchaToken);
-  if (!isCaptchaValid) {
-    return res.status(400).json({ error: 'reCAPTCHA validation failed. Please try again.' });
-  }
-
-  // Existing login logic
+// 🔐 Login
+app.post('/api/login', authLimiter, async (req, res) => {
+  const { email, password } = req.body;
   const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) return res.status(400).json({ error: 'Invalid credentials.' });
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(400).json({ error: 'Invalid credentials.' });
-
   const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
   res.json({ token, email: user.email });
 });
@@ -287,17 +266,18 @@ app.delete('/api/delete-account', authenticateToken, async (req, res) => {
   }
 });
 
-// 🔍 Get User by Email
+// 🔍 Get User by Email (supports user and API)
 app.get('/api/user/email/:email', async (req, res) => {
   const email = req.params.email.toLowerCase();
   const localPart = email.split('@')[0];
-  const apiKey = await ApiKey.findOne({
+  const apiKey = await ApiKey.findOne({ 
     $or: [
       { customFrom: email },
       { partnerName: localPart }
     ],
-    revoked: false
-  }).exec();
+    revoked: false,
+    $expr: { $lt: ["$expiresAt", new Date()] }
+  });
 
   if (apiKey && !apiKey.revoked && (!apiKey.expiresAt || apiKey.expiresAt > new Date())) {
     return res.json({
@@ -312,7 +292,7 @@ app.get('/api/user/email/:email', async (req, res) => {
 });
 
 // 🔑 Generate API Key (Admin Only)
-app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
+app.post('/api/admin/generate-key', authenticateToken, adminLimiter, async (req, res) => {
   if (!isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
@@ -355,12 +335,12 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
   });
   try {
     await apiKey.save();
-    res.json({
-      message: 'API key generated.',
-      key,
+    res.json({ 
+      message: 'API key generated.', 
+      key, 
       fromEmail,
       avatar: avatar || null,
-      expiresAt
+      expiresAt 
     });
   } catch (err) {
     if (err.code === 11000) {
@@ -372,7 +352,7 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
 });
 
 // 📋 List API Keys
-app.get('/api/admin/keys', authenticateToken, async (req, res) => {
+app.get('/api/admin/keys', authenticateToken, adminLimiter, async (req, res) => {
   if (!isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
@@ -381,7 +361,7 @@ app.get('/api/admin/keys', authenticateToken, async (req, res) => {
 });
 
 // 🚫 Revoke API Key
-app.post('/api/admin/revoke-key', authenticateToken, async (req, res) => {
+app.post('/api/admin/revoke-key', authenticateToken, adminLimiter, async (req, res) => {
   if (!isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
@@ -392,7 +372,7 @@ app.post('/api/admin/revoke-key', authenticateToken, async (req, res) => {
 });
 
 // 🤖 Send Automated Email (via API Key)
-app.post('/api/automated-send', async (req, res) => {
+app.post('/api/automated-send', apiLimiter, async (req, res) => {
   const { key, to, subject, body } = req.body;
   if (!key || !to || !subject || !body) {
     return res.status(400).json({ error: 'API key and all fields required.' });
