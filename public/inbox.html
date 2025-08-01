@@ -123,22 +123,6 @@
       background: var(--bg);
     }
 
-    /* === Toolbar === */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      padding: 14px 20px;
-      background: var(--toolbar-bg);
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-
-    .toolbar h2 {
-      font-size: 18px;
-      font-weight: 500;
-      color: var(--text-secondary);
-    }
-
     /* === Message List === */
     .messages {
       flex: 1;
@@ -250,16 +234,13 @@
     <div class="sidebar-item active">
       <i>📧</i> <span>Inbox</span>
     </div>
-    <!-- Removed Compose button -->
+    <div class="sidebar-item" onclick="location.href='compose.html'">
+      <i>✏️</i> <span>Compose</span>
+    </div>
   </div>
 
   <!-- Main Content -->
   <div class="main-content">
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <h2>Inbox</h2>
-    </div>
-
     <!-- Message List -->
     <div class="messages" id="messages">
       <div style="padding: 20px; color: var(--text-secondary); font-style: italic; text-align: center;">
