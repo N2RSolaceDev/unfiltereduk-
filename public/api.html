@@ -43,14 +43,15 @@
       background: var(--accent); color: white; border: none; cursor: pointer; font-weight: 500;
     }
     button:hover { background: #9b68db; }
+    .revoke { background: var(--error); }
+    .revoke:hover { background: #b00; }
 
     .key-list { margin-top: 30px; }
     .key-item {
       background: #222; padding: 16px; border-radius: 8px; margin-bottom: 10px; font-size: 14px;
     }
     .key-item strong { color: var(--accent); }
-    .revoke { background: var(--error); margin-left: 10px; }
-    .revoke:hover { background: #b00; }
+    .key-item .from { color: #88f; font-weight: 500; }
 
     .status { padding: 12px; margin: 15px 0; border-radius: 6px; text-align: center; }
     .status.success { background: #d4edda; color: #155724; }
@@ -74,9 +75,10 @@
   <!-- Main -->
   <div class="container">
     <h2>API Key Management</h2>
-    <p>Create and manage API keys for trusted partners.</p>
+    <p>Create and manage API keys with custom sender addresses.</p>
 
     <input type="text" id="partnerName" placeholder="Partner Name (e.g., News Corp)" />
+    <input type="email" id="fromEmail" placeholder="Custom Sender (e.g., newsletter@unfiltereduk.co.uk)" />
     <input type="number" id="expiresDays" placeholder="Auto-expire in days (optional)" min="1" />
 
     <button onclick="generateKey()">Generate API Key</button>
@@ -90,8 +92,6 @@
     const token = localStorage.getItem('token');
     const userEmail = localStorage.getItem('email');
     if (!token) location.href = 'login.html';
-
-    // Only show this page if user is solace@
     if (userEmail !== 'solace@unfiltereduk.co.uk') {
       alert('Access denied.');
       location.href = 'inbox.html';
@@ -99,7 +99,12 @@
 
     async function generateKey() {
       const partnerName = document.getElementById('partnerName').value;
+      const fromEmail = document.getElementById('fromEmail').value;
       const expiresDays = document.getElementById('expiresDays').value || null;
+
+      if (!partnerName || !fromEmail) {
+        return setStatus('Partner name and sender email are required.', true);
+      }
 
       const res = await fetch('/api/admin/generate-key', {
         method: 'POST',
@@ -107,13 +112,14 @@
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ partnerName, expiresDays })
+        body: JSON.stringify({ partnerName, fromEmail, expiresDays })
       });
 
       const data = await res.json();
       if (res.ok) {
-        setStatus(`✅ Key generated: ${data.key}`, false);
+        setStatus(`✅ Key generated: ${data.fromEmail}`, false);
         document.getElementById('partnerName').value = '';
+        document.getElementById('fromEmail').value = '';
         document.getElementById('expiresDays').value = '';
         loadKeys();
       } else {
@@ -138,6 +144,7 @@
         div.innerHTML = `
           <div><strong>Key:</strong> ${k.key.substring(0, 20)}...</div>
           <div><strong>Partner:</strong> ${k.partnerName}</div>
+          <div><strong>From:</strong> <span class="from">${k.fromEmail}</span></div>
           <div><strong>Created:</strong> ${new Date(k.createdAt).toLocaleString()}</div>
           <div><strong>Expires:</strong> ${k.expiresAt ? new Date(k.expiresAt).toLocaleString() : 'Never'}</div>
           <button class="revoke" onclick="revokeKey('${k.key}')">Revoke</button>
