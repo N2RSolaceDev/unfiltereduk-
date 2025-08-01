@@ -47,19 +47,29 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', messageSchema);
 
-// API Key Schema (with customFrom)
+// API Key Schema (with avatar)
 const apiKeySchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true }, // ukapi_...
-  createdBy: { type: String, required: true }, // admin email
-  partnerName: { type: String, required: true }, // for @unfiltereduk.co.uk
+  createdBy: { type: String, required: true },
+  partnerName: { type: String, required: true },
   customFrom: { 
     type: String,
     validate: {
       validator: function(v) {
-        if (!v) return true; // optional
+        if (!v) return true;
         return /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]+$/.test(v);
       },
       message: props => `${props.value} is not a valid email address.`
+    }
+  },
+  avatar: {
+    type: String,
+    validate: {
+      validator: function(v) {
+        if (!v) return true;
+        return /^(https?:\/\/).*\.(jpg|jpeg|png|webp|gif)$/i.test(v);
+      },
+      message: props => `${props.value} is not a valid image URL.`
     }
   },
   permissions: { type: [String], default: ['send'] },
@@ -70,7 +80,7 @@ const apiKeySchema = new mongoose.Schema({
 
 // Unique constraints
 apiKeySchema.index({ partnerName: 1 }, { unique: true });
-apiKeySchema.index({ customFrom: 1 }, { sparse: true, unique: true }); // only if set
+apiKeySchema.index({ customFrom: 1 }, { sparse: true, unique: true });
 
 const ApiKey = mongoose.model('ApiKey', apiKeySchema);
 
@@ -97,11 +107,9 @@ async function isEmailTaken(email) {
   const normalized = email.toLowerCase().trim();
   const localPart = normalized.split('@')[0];
 
-  // Check user
   const user = await User.findOne({ email: normalized });
   if (user) return true;
 
-  // Check API: partnerName match or customFrom
   const apiKey = await ApiKey.findOne({
     $or: [
       { partnerName: localPart },
@@ -240,26 +248,47 @@ app.delete('/api/delete-account', authenticateToken, async (req, res) => {
   }
 });
 
-// 🔍 Get User by Email
+// 🔍 Get User by Email (supports user and API)
 app.get('/api/user/email/:email', async (req, res) => {
-  const user = await User.findOne({ email: req.params.email }).select('fullName avatar');
-  if (!user) return res.status(404).json({ error: 'User not found.' });
-  res.json(user);
+  const email = req.params.email.toLowerCase();
+
+  // Check if it's an API sender
+  const localPart = email.split('@')[0];
+  const apiKey = await ApiKey.findOne({ 
+    $or: [
+      { customFrom: email },
+      { partnerName: localPart }
+    ],
+    revoked: false,
+    $expr: { $lt: ["$expiresAt", new Date()] }
+  });
+
+  if (apiKey && !apiKey.revoked && (!apiKey.expiresAt || apiKey.expiresAt > new Date())) {
+    return res.json({
+      fullName: apiKey.partnerName.charAt(0).toUpperCase() + apiKey.partnerName.slice(1),
+      avatar: apiKey.avatar || null
+    });
+  }
+
+  // Else check user
+  const user = await User.findOne({ email }).select('fullName avatar');
+  if (user) return res.json(user);
+
+  res.status(404).json({ error: 'User not found.' });
 });
 
-// 🔑 Generate API Key (Admin Only) – with ukapi_ prefix
+// 🔑 Generate API Key (Admin Only)
 app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
   if (!isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
 
-  const { partnerName, customFrom, expiresDays } = req.body;
+  const { partnerName, customFrom, avatar, expiresDays } = req.body;
 
   if (!partnerName || !partnerName.trim()) {
     return res.status(400).json({ error: 'Partner name is required.' });
   }
 
-  // Clean partnerName
   const cleanName = partnerName
     .trim()
     .toLowerCase()
@@ -270,7 +299,6 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Partner name must contain letters or numbers.' });
   }
 
-  // Validate customFrom if provided
   let fromEmail = `${cleanName}@unfiltereduk.co.uk`;
   if (customFrom && customFrom.trim()) {
     const normalized = customFrom.trim().toLowerCase();
@@ -285,7 +313,11 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
     fromEmail = normalized;
   }
 
-  // ✅ Keep ukapi_ prefix
+  // Validate avatar URL
+  if (avatar && !/^(https?:\/\/).*\.(jpg|jpeg|png|webp|gif)$/i.test(avatar)) {
+    return res.status(400).json({ error: 'Invalid image URL format.' });
+  }
+
   const key = 'ukapi_' + crypto.randomBytes(32).toString('hex');
   const expiresAt = expiresDays ? new Date(Date.now() + expiresDays * 86400000) : null;
 
@@ -294,6 +326,7 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
     createdBy: req.user.email,
     partnerName: cleanName,
     customFrom: fromEmail !== `${cleanName}@unfiltereduk.co.uk` ? fromEmail : undefined,
+    avatar: avatar || undefined,
     expiresAt,
     permissions: ['send']
   });
@@ -304,6 +337,7 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
       message: 'API key generated.', 
       key, 
       fromEmail,
+      avatar: avatar || null,
       expiresAt 
     });
   } catch (err) {
@@ -351,7 +385,6 @@ app.post('/api/automated-send', async (req, res) => {
     return res.status(403).json({ error: 'API key expired.' });
   }
 
-  // Use customFrom if set, else default
   const from = apiKey.customFrom || `${apiKey.partnerName}@unfiltereduk.co.uk`;
 
   const msg = new Message({ from, to, subject, body });
