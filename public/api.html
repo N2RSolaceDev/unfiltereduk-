@@ -140,6 +140,7 @@
         div.innerHTML = `
           <div><strong>From:</strong> ${from}</div>
           <div><strong>Partner:</strong> ${k.partnerName}</div>
+          <div><strong>Key:</strong> ${k.key.substring(0, 12)}...</div>
           <div><strong>Created:</strong> ${new Date(k.createdAt).toLocaleString()}</div>
           <div><strong>Expires:</strong> ${k.expiresAt ? new Date(k.expiresAt).toLocaleString() : 'Never'}</div>
           <button class="revoke" onclick="revokeKey('${k.key}')">Revoke</button>
