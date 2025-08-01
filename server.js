@@ -46,20 +46,31 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', messageSchema);
 
-// API Key Schema – Now supports customFrom
+// API Key Schema (now supports customFrom)
 const apiKeySchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
   createdBy: { type: String, required: true },
-  partnerName: { type: String, required: true }, // internal name
-  fromEmail: { type: String, required: true, lowercase: true }, // custom sender
+  partnerName: { type: String, required: true }, // base for @unfiltereduk.co.uk
+  customFrom: { 
+    type: String, 
+    validate: {
+      validator: function(v) {
+        if (!v) return true; // optional
+        return /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]+$/.test(v);
+      },
+      message: props => `${props.value} is not a valid email address.`
+    }
+  },
   permissions: { type: [String], default: ['send'] },
   expiresAt: Date,
   revoked: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 
-// Ensure fromEmail is unique
-apiKeySchema.index({ fromEmail: 1 }, { unique: true });
+// Unique index on partnerName and customFrom
+apiKeySchema.index({ partnerName: 1 }, { unique: true });
+apiKeySchema.index({ customFrom: 1 }, { sparse: true, unique: true }); // only if set
+
 const ApiKey = mongoose.model('ApiKey', apiKeySchema);
 
 // Middleware: Authenticate Token
@@ -85,12 +96,15 @@ async function isEmailTaken(email) {
   const normalized = email.toLowerCase().trim();
   const localPart = normalized.split('@')[0];
 
-  // Check if user exists
   const user = await User.findOne({ email: normalized });
   if (user) return true;
 
-  // Check if any API key uses this as fromEmail
-  const apiKey = await ApiKey.findOne({ fromEmail: normalized });
+  const apiKey = await ApiKey.findOne({ 
+    $or: [
+      { partnerName: localPart },
+      { customFrom: normalized }
+    ]
+  });
   if (apiKey) return true;
 
   return false;
@@ -103,31 +117,31 @@ app.post('/api/register', async (req, res) => {
 
   if (!normalizedEmail.endsWith('@unfiltereduk.co.uk')) {
     return res.status(400).json({ 
-      error: 'Only @unfiltereduk.co.uk allowed.' 
+      error: 'Only @unfiltereduk.co.uk email addresses are allowed.' 
     });
   }
 
   if (await isEmailTaken(normalizedEmail)) {
     return res.status(400).json({ 
-      error: 'This email is already taken.' 
+      error: 'This email or identity is already taken.' 
     });
   }
 
   if (!password || password.length < 6) {
     return res.status(400).json({ 
-      error: 'Password too short.' 
+      error: 'Password must be at least 6 characters.' 
     });
   }
 
   if (!fullName || fullName.trim().length === 0) {
     return res.status(400).json({ 
-      error: 'Full name required.' 
+      error: 'Full name is required.' 
     });
   }
 
   try {
     const hashed = await bcrypt.hash(password, 10);
-    const user = new User({ email: normalizedEmail, password: hashed, fullName });
+    const user = new User({ email: normalizedEmail, password: hashed, fullName: fullName.trim() });
     await user.save();
 
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -226,31 +240,45 @@ app.get('/api/user/email/:email', async (req, res) => {
   res.json(user);
 });
 
-// 🔑 Generate API Key (Admin Only) – With Custom Email
+// 🔑 Generate API Key (Admin Only) – Now supports customFrom
 app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
   if (!isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
 
-  const { partnerName, fromEmail, expiresDays } = req.body;
+  const { partnerName, customFrom, expiresDays } = req.body;
 
-  if (!partnerName || !fromEmail) {
-    return res.status(400).json({ error: 'Partner name and sender email required.' });
+  if (!partnerName || !partnerName.trim()) {
+    return res.status(400).json({ error: 'Partner name is required.' });
   }
 
-  const cleanPartnerName = partnerName.trim();
-  const normalizedFrom = fromEmail.toLowerCase().trim();
+  // Clean partnerName
+  const cleanName = partnerName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .substring(0, 20);
 
-  // Validate domain
-  if (!normalizedFrom.endsWith('@unfiltereduk.co.uk')) {
-    return res.status(400).json({ error: 'Sender must be @unfiltereduk.co.uk' });
+  if (!cleanName) {
+    return res.status(400).json({ error: 'Partner name must contain letters or numbers.' });
   }
 
-  // Check if email is taken
-  if (await isEmailTaken(normalizedFrom)) {
-    return res.status(400).json({ 
-      error: `The email ${normalizedFrom} is already in use.` 
-    });
+  // Default from
+  let fromEmail = `${cleanName}@unfiltereduk.co.uk`;
+
+  // If customFrom provided
+  if (customFrom && customFrom.trim()) {
+    const normalized = customFrom.trim().toLowerCase();
+    if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]+$/.test(normalized)) {
+      return res.status(400).json({ error: 'Invalid custom email format.' });
+    }
+
+    // Check if taken
+    if (await isEmailTaken(normalized)) {
+      return res.status(400).json({ error: `The email ${normalized} is already taken.` });
+    }
+
+    fromEmail = normalized;
   }
 
   const key = 'ukapi_' + crypto.randomBytes(32).toString('hex');
@@ -259,8 +287,8 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
   const apiKey = new ApiKey({
     key,
     createdBy: req.user.email,
-    partnerName: cleanPartnerName,
-    fromEmail: normalizedFrom,
+    partnerName: cleanName,
+    customFrom: fromEmail !== `${cleanName}@unfiltereduk.co.uk` ? fromEmail : undefined,
     expiresAt,
     permissions: ['send']
   });
@@ -270,14 +298,13 @@ app.post('/api/admin/generate-key', authenticateToken, async (req, res) => {
     res.json({ 
       message: 'API key generated.', 
       key, 
-      fromEmail: normalizedFrom,
+      fromEmail,
       expiresAt 
     });
   } catch (err) {
-    if (err.code === 11000 && err.keyPattern?.fromEmail) {
-      return res.status(400).json({ 
-        error: `An API already uses ${normalizedFrom} as sender.` 
-      });
+    if (err.code === 11000) {
+      const field = err.keyPattern.customFrom ? 'custom email' : 'partner name';
+      return res.status(400).json({ error: `This ${field} is already in use.` });
     }
     res.status(500).json({ error: 'Key generation failed.' });
   }
@@ -305,7 +332,7 @@ app.post('/api/admin/revoke-key', authenticateToken, async (req, res) => {
   res.json({ message: 'API key revoked.' });
 });
 
-// 🤖 Send Automated Email
+// 🤖 Send Automated Email (via API Key)
 app.post('/api/automated-send', async (req, res) => {
   const { key, to, subject, body } = req.body;
   if (!key || !to || !subject || !body) {
@@ -319,7 +346,8 @@ app.post('/api/automated-send', async (req, res) => {
     return res.status(403).json({ error: 'API key expired.' });
   }
 
-  const from = apiKey.fromEmail; // ✅ Custom sender
+  // Use customFrom if set, else default
+  const from = apiKey.customFrom || `${apiKey.partnerName}@unfiltereduk.co.uk`;
 
   const msg = new Message({ from, to, subject, body });
   await msg.save();
