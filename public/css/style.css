@@ -1,0 +1,62 @@
+/* Global */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: #fff; color: #1a1a1a; }
+a { text-decoration: none; color: #c00; }
+.container { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+header { padding: 20px 0; border-bottom: 1px solid #eee; }
+header .container { display: flex; justify-content: space-between; align-items: center; }
+header h1 { font-size: 28px; }
+header h1 span { color: #c00; }
+nav a { margin-left: 20px; font-weight: 500; }
+
+/* Hero */
+.hero { padding: 100px 20px; text-align: center; background: #f8f8f8; }
+.hero h2 { font-size: 40px; margin-bottom: 20px; }
+.hero h2 span { color: #c00; }
+.cta-group { margin-top: 30px; }
+.cta, .btn-outline {
+  display: inline-block; margin: 0 10px; padding: 14px 28px; border-radius: 6px; font-size: 18px;
+}
+.cta { background: #c00; color: white; }
+.btn-outline { border: 2px solid #c00; color: #c00; }
+
+/* Auth */
+.auth-container {
+  min-height: 80vh; display: flex; align-items: center; justify-content: center;
+}
+.auth-box {
+  background: #f9f9f9; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+.auth-box h2 { margin-bottom: 10px; text-align: center; }
+.auth-box p { text-align: center; color: #666; margin-bottom: 20px; }
+.auth-box input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+.auth-box button { width: 100%; background: #c00; color: white; padding: 14px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+.text-center { text-align: center; margin-top: 15px; }
+
+/* Messages */
+.status { padding: 12px; margin: 15px 0; border-radius: 6px; text-align: center; }
+.status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.hidden { display: none; }
+
+/* Inbox */
+.msg {
+  padding: 20px; border-bottom: 1px solid #eee; background: #fcfcfc;
+}
+.msg strong { display: block; color: #c00; }
+.msg span { font-size: 16px; display: block; margin: 4px 0; }
+.msg small { color: #777; font-style: italic; }
+.msg p { margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+
+.btn-compose {
+  background: #c00; color: white; padding: 10px 20px; border: none; border-radius: 6px; margin-bottom: 20px; cursor: pointer;
+}
+
+/* Profile & Settings */
+.avatar-large { width: 100px; height: 100px; border-radius: 50%; margin: 20px auto; display: block; }
+
+footer {
+  text-align: center; padding: 40px 20px; background: #1a1a1a; color: #ccc; margin-top: 50px;
+}
