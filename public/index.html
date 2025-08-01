@@ -3,40 +3,331 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>unfiltereduk.co.uk</title>
+  <meta name="description" content="unfiltereduk.co.uk — The British Email for the World. Secure, sovereign, and unapologetically UK." />
+  <title>unfiltereduk.co.uk | The British Gmail for the World</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #fff; color: #1a1a1a; }
-    a { text-decoration: none; color: #c00; }
-    .container { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
-    .hero { padding: 100px 20px; text-align: center; background: #f8f8f8; }
-    .hero h2 { font-size: 40px; margin-bottom: 20px; }
-    .hero h2 span { color: #c00; }
-    .cta-group { margin-top: 30px; }
-    .cta, .btn-outline {
-      display: inline-block; margin: 0 10px; padding: 14px 28px; border-radius: 6px; font-size: 18px;
+    /* === Global Styles === */
+    :root {
+      --red: #c00;
+      --dark: #1a1a1a;
+      --light: #f8f8f8;
+      --gray: #555;
+      --white: #fff;
+      --transition: all 0.3s ease;
     }
-    .cta { background: #c00; color: white; }
-    .btn-outline { border: 2px solid #c00; color: #c00; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    a {
+      text-decoration: none;
+      color: var(--red);
+      font-weight: 500;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* === Header === */
+    header {
+      padding: 20px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .logo span {
+      color: var(--red);
+    }
+
+    nav a {
+      margin-left: 24px;
+      color: var(--dark);
+    }
+
+    nav a:hover {
+      color: var(--red);
+    }
+
+    /* === Hero Section === */
+    .hero {
+      padding: 140px 0 100px;
+      text-align: center;
+      background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f0 100%);
+      border-bottom: 1px solid #eee;
+    }
+
+    .hero h1 {
+      font-size: 56px;
+      margin-bottom: 20px;
+      line-height: 1.1;
+    }
+
+    .hero h1 span {
+      color: var(--red);
+    }
+
+    .hero p {
+      font-size: 22px;
+      max-width: 700px;
+      margin: 0 auto 40px;
+      color: var(--gray);
+    }
+
+    .tagline {
+      display: inline-block;
+      background: var(--red);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+
+    .cta-group {
+      margin-top: 30px;
+    }
+
+    .cta, .btn-outline {
+      display: inline-block;
+      margin: 0 15px;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .cta {
+      background: var(--red);
+      color: white;
+    }
+
+    .cta:hover {
+      background: #a00;
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      border: 2px solid var(--red);
+      color: var(--red);
+    }
+
+    .btn-outline:hover {
+      background: var(--red);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* === Features === */
+    .features {
+      padding: 100px 0;
+      background: var(--white);
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 36px;
+      margin-bottom: 60px;
+      color: var(--dark);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 40px;
+    }
+
+    .feature-card {
+      background: var(--light);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .feature-card h3 {
+      font-size: 22px;
+      margin: 15px 0;
+      color: var(--red);
+    }
+
+    .feature-card p {
+      color: var(--gray);
+      font-size: 16px;
+    }
+
+    /* === CTA Section === */
+    .cta-section {
+      padding: 100px 0;
+      text-align: center;
+      background: var(--dark);
+      color: white;
+    }
+
+    .cta-section h2 {
+      font-size: 40px;
+      margin-bottom: 20px;
+    }
+
+    .cta-section p {
+      font-size: 18px;
+      max-width: 600px;
+      margin: 0 auto 30px;
+      color: #ccc;
+    }
+
+    .cta-white {
+      background: white;
+      color: var(--dark);
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      display: inline-block;
+      transition: var(--transition);
+    }
+
+    .cta-white:hover {
+      background: #eee;
+      transform: translateY(-2px);
+    }
+
+    /* === Footer === */
     footer {
-      text-align: center; padding: 40px 20px; background: #1a1a1a; color: #ccc; margin-top: 50px;
+      padding: 60px 0 40px;
+      text-align: center;
+      background: #f0f0f0;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .footer-links {
+      margin-bottom: 20px;
+    }
+
+    .footer-links a {
+      color: #666;
+      margin: 0 12px;
+      transition: var(--transition);
+    }
+
+    .footer-links a:hover {
+      color: var(--red);
+    }
+
+    /* === Responsive === */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 40px;
+      }
+      .hero p {
+        font-size: 18px;
+      }
+      .cta, .btn-outline {
+        display: block;
+        margin: 10px auto;
+        width: 80%;
+      }
+      nav {
+        display: none;
+      }
     }
   </style>
 </head>
 <body>
+
+  <!-- Header -->
+  <header class="container">
+    <div class="logo">unfiltered<span>uk</span>.co.uk</div>
+    <nav>
+      <a href="login.html">Login</a>
+      <a href="register.html">Sign Up</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
   <section class="hero">
     <div class="container">
-      <h2>Your UK Identity<br><span>unfiltered</span></h2>
-      <p>One email. One network. No filter.</p>
+      <div class="tagline">BRITISH. SECURE. GLOBAL.</div>
+      <h1>The British Gmail<br>for the <span>World</span></h1>
+      <p>A new kind of email. Built in the UK. Trusted everywhere. No tracking. No filter. Just you.</p>
       <div class="cta-group">
-        <a href="register.html" class="cta">Get @unfiltereduk.co.uk</a>
-        <a href="login.html" class="btn-outline">Already have an account?</a>
+        <a href="register.html" class="cta">Get Your @unfiltereduk.co.uk</a>
+        <a href="login.html" class="btn-outline">Already Have an Account?</a>
       </div>
     </div>
   </section>
 
+  <!-- Features -->
+  <section class="features">
+    <div class="container">
+      <h2 class="section-title">Why the World Chooses unfiltereduk</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>🇬🇧 British Identity</h3>
+          <p>Every email ends with .co.uk — a mark of credibility, quality, and digital sovereignty.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🔐 Privacy First</h3>
+          <p>No tracking. No ads. No data mining. Your inbox is yours — not a product.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🌍 Global Access</h3>
+          <p>Used by professionals, journalists, and creatives in over 50 countries.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="container">
+      <h2>Join the Movement</h2>
+      <p>One email. One identity. One network. For everyone who means business.</p>
+      <a href="register.html" class="cta-white">Claim Your @unfiltereduk.co.uk Today</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
   <footer>
-    <p>&copy; 2025 unfiltereduk.co.uk | One UK. No Filter.</p>
+    <div class="container">
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Support</a>
+        <a href="#">Contact</a>
+      </div>
+      <p>&copy; <script>document.write(new Date().getFullYear())</script> unfiltereduk.co.uk</p>
+      <p>The British Email for the World</p>
+    </div>
   </footer>
+
 </body>
 </html>
