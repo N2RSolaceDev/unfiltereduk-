@@ -1,9 +1,74 @@
-<h3>Send a Message</h3>
-<input type="email" id="to" placeholder="To (email)" required />
-<input type="text" id="subject" placeholder="Subject" required />
-<textarea id="body" placeholder="Your message..." rows="5"></textarea>
-<button onclick="sendMessage()">Send</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>unfiltereduk.co.uk | Your Network. No Filter.</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>unfiltered<span>uk</span>.co.uk</h1>
+      <nav>
+        <a href="#home">Home</a>
+        <a href="#login" id="navLogin">Login</a>
+        <a href="#dashboard" id="navDash" style="display:none;">Dashboard</a>
+        <a href="#logout" id="navLogout" style="display:none;">Logout</a>
+      </nav>
+    </div>
+  </header>
 
-<div id="external-note" style="margin-top:10px; font-size:14px; color:#666;">
-  <strong>Note:</strong> Messages to non-@unfiltereduk.co.uk addresses must be forwarded manually from your personal email.
-</div>
+  <!-- Home Section -->
+  <section id="home" class="hero">
+    <div class="container">
+      <h2>One UK.<br><span>One Identity.</span></h2>
+      <p>You’re not just sending email.<br>You’re joining a network that means business — with attitude.</p>
+      <a href="#login" class="cta">Get Your @unfiltereduk.co.uk</a>
+    </div>
+  </section>
+
+  <!-- Login Section -->
+  <section id="login" class="panel">
+    <div class="form-container">
+      <h2>Join the Network</h2>
+      <p>Create your <strong>@unfiltereduk.co.uk</strong> identity</p>
+      <input type="email" id="email" placeholder="you@unfiltereduk.co.uk" required />
+      <input type="password" id="password" placeholder="Choose a password" required />
+      <button onclick="registerOrLogin()">Register / Login</button>
+      <p class="note"><small>We don’t share your data. This is your private network.</small></p>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard" class="panel" style="display:none;">
+    <div class="container">
+      <h2>Dashboard</h2>
+      <p>Logged in as: <strong id="userEmail"></strong></p>
+
+      <div class="card">
+        <h3>Send a Message</h3>
+        <input type="email" id="to" placeholder="To (email)" required />
+        <input type="text" id="subject" placeholder="Subject" required />
+        <textarea id="body" placeholder="Your message..." rows="5"></textarea>
+        <button onclick="sendMessage()">Send</button>
+      </div>
+
+      <div class="card">
+        <h3>Inbox</h3>
+        <div id="inbox">Loading messages...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script> unfiltereduk.co.uk</p>
+      <p>One UK. One Email. No Filter.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
