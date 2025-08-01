@@ -5,112 +5,309 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Email | unfiltereduk.co.uk</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #fff; color: #1a1a1a; }
-    header { padding: 20px 0; border-bottom: 1px solid #eee; }
-    header .container { max-width: 1000px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 28px; }
-    header h1 span { color: #c00; }
-    nav a { margin-left: 16px; color: #c00; text-decoration: none; font-weight: 500; }
-    main.container { padding: 40px 20px; max-width: 800px; margin: 0 auto; }
-    input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-    textarea { min-height: 200px; }
-    button { background: #c00; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 10px; }
-    .status {
-      padding: 12px; margin: 15px 0; border-radius: 6px; text-align: center; font-size: 14px;
+    /* === Global Dark Theme === */
+    :root {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --text: #e0e0e0;
+      --text-secondary: #aaaaaa;
+      --border: #333333;
+      --accent: #bb86fc;
+      --error: #cf3339;
+      --hover-bg: #2a2a2a;
     }
-    .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    .hidden { display: none; }
-    .email-details {
-      margin-top: 20px;
-      border: 1px solid #ddd;
-      padding: 20px;
-      border-radius: 8px;
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
     }
-    .email-header {
-      margin-bottom: 10px;
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* === Topbar === */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: #1f1f1f;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .logo span {
+      color: var(--error);
+    }
+
+    .topbar nav a {
+      margin-left: 18px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
       font-weight: 500;
     }
+
+    .topbar nav a:hover {
+      text-decoration: underline;
+    }
+
+    /* === Main Content === */
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    /* === Email Header === */
+    .email-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .email-sender {
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .email-from, .email-to, .email-subject {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 4px 0;
+    }
+
+    .email-subject {
+      font-weight: 500;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+
+    .email-date {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    /* === Email Body === */
     .email-body {
+      padding: 20px 0;
+      line-height: 1.6;
       white-space: pre-wrap;
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    /* === Action Buttons === */
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #9b68db;
+    }
+
+    button.delete {
+      background: var(--error);
+    }
+
+    button.delete:hover {
+      background: #b00;
+    }
+
+    /* === Status Message === */
+    .status {
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background: #3a1818;
+      color: var(--error);
+      border: 1px solid var(--error);
+    }
+
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="container">
-      <h1>unfiltered<span>uk</span>.co.uk</h1>
-      <nav>
-        <a href="inbox.html">Inbox</a>
-        <a href="profile.html">Profile</a>
-        <a href="settings.html">Settings</a>
-        <a href="#" onclick="logout()">Logout</a>
-      </nav>
-    </div>
-  </header>
 
-  <main class="container">
-    <div class="email-details">
-      <div class="email-header">
-        <strong>From:</strong> <span id="from"></span><br>
-        <strong>To:</strong> <span id="to"></span><br>
-        <strong>Subject:</strong> <span id="subject"></span><br>
-        <strong>Date:</strong> <span id="createdAt"></span>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">unfiltered<span>uk</span>.co.uk</div>
+    <nav>
+      <a href="inbox.html">Inbox</a>
+      <a href="profile.html">Profile</a>
+      <a href="settings.html">Settings</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <!-- Email Header with Avatar -->
+    <div class="email-header">
+      <img id="avatar" class="avatar" src="https://via.placeholder.com/50" alt="Avatar">
+      <div>
+        <div class="email-sender"><strong>From:</strong> <span id="from">Loading...</span></div>
+        <div class="email-to"><strong>To:</strong> <span id="to"></span></div>
+        <div class="email-subject" id="subject"></div>
       </div>
-      <div class="email-body" id="body"></div>
+      <div class="email-date" id="createdAt"></div>
     </div>
 
-    <button onclick="reply()">Reply</button>
-    <button onclick="deleteMessage()">Delete</button>
+    <!-- Email Body -->
+    <div class="email-body" id="body"></div>
 
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button onclick="reply()">Reply</button>
+      <button class="delete" onclick="deleteMessage()">Delete</button>
+    </div>
+
+    <!-- Status Message -->
     <div id="status" class="status hidden"></div>
-  </main>
+  </div>
 
   <script>
     const token = localStorage.getItem('token');
     if (!token) location.href = 'login.html';
 
     const messageId = new URLSearchParams(window.location.search).get('id');
-
-    async function loadEmail() {
-      const res = await fetch(`/api/email/${messageId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!res.ok) return logout();
-
-      const message = await res.json();
-      document.getElementById('from').textContent = message.from;
-      document.getElementById('to').textContent = message.to;
-      document.getElementById('subject').textContent = message.subject || '(No Subject)';
-      document.getElementById('createdAt').textContent = new Date(message.createdAt).toLocaleString();
-      document.getElementById('body').textContent = message.body;
+    if (!messageId) {
+      alert('No message ID provided.');
+      location.href = 'inbox.html';
     }
 
-    async function reply() {
+    // Load email details
+    async function loadEmail() {
+      try {
+        const res = await fetch(`/api/email/${messageId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) return logout();
+
+        const message = await res.json();
+        document.getElementById('from').textContent = message.from;
+        document.getElementById('to').textContent = message.to;
+        document.getElementById('subject').textContent = message.subject || '(No Subject)';
+        document.getElementById('createdAt').textContent = new Date(message.createdAt).toLocaleString();
+        document.getElementById('body').textContent = message.body;
+
+        // Load sender avatar
+        await loadSenderAvatar(message.from);
+      } catch (err) {
+        console.error('Failed to load email:', err);
+        setStatus('Could not load message.', true);
+      }
+    }
+
+    // Fetch sender's avatar
+    async function loadSenderAvatar(email) {
+      try {
+        const res = await fetch(`/api/user/email/${encodeURIComponent(email)}`);
+        if (res.ok) {
+          const user = await res.json();
+          const avatarImg = document.getElementById('avatar');
+          if (user.avatar) {
+            avatarImg.src = user.avatar;
+          } else {
+            // Fallback: Show initials
+            const parts = user.fullName?.split(' ') || [email.split('@')[0]];
+            const initials = parts.map(p => p[0]).join('').toUpperCase().substring(0, 2);
+            avatarImg.src = 'https://via.placeholder.com/50';
+            avatarImg.style.background = '#777';
+            avatarImg.style.color = 'white';
+            avatarImg.textContent = initials;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load avatar:', err);
+      }
+    }
+
+    // Reply to sender
+    function reply() {
       const from = document.getElementById('from').textContent;
       const subject = document.getElementById('subject').textContent;
-      const to = document.getElementById('to').textContent;
-
-      // Redirect to reply page with pre-filled fields
       window.location.href = `reply.html?to=${encodeURIComponent(from)}&subject=${encodeURIComponent(subject)}`;
     }
 
+    // Delete message
     async function deleteMessage() {
+      if (!confirm('Delete this message?')) return;
+
       const res = await fetch(`/api/delete/${messageId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (res.ok) {
-        alert('Message deleted.');
-        window.location.href = 'inbox.html';
+        setStatus('Message deleted.', false);
+        setTimeout(() => {
+          window.location.href = 'inbox.html';
+        }, 1000);
       } else {
-        alert('Failed to delete message.');
+        setStatus('Delete failed.', true);
       }
     }
 
+    // Show status message
     function setStatus(msg, error = false) {
       const el = document.getElementById('status');
       el.textContent = msg;
@@ -119,11 +316,13 @@
       setTimeout(() => el.classList.add('hidden'), 4000);
     }
 
+    // Logout
     function logout() {
       localStorage.clear();
       location.href = 'index.html';
     }
 
+    // On load
     window.onload = loadEmail;
   </script>
 </body>
