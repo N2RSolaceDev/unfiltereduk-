@@ -99,11 +99,12 @@
       border-radius: 50%;
       object-fit: cover;
       background: #555;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 18px;
     }
 
     .recipient-info {
@@ -178,9 +179,9 @@
     }
 
     .status.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      background: #2a4a30;
+      color: #a0dba0;
+      border: 1px solid #2d5e35;
     }
 
     .status.error {
@@ -213,7 +214,7 @@
 
     <!-- Recipient with Avatar -->
     <div class="recipient-bar">
-      <img id="avatar" class="avatar" src="https://via.placeholder.com/40" alt="Avatar">
+      <div id="avatar" class="avatar">?</div>
       <div class="recipient-info">
         <div class="recipient-label">To</div>
         <div class="recipient-email" id="to-email">Loading...</div>
@@ -247,23 +248,29 @@
     async function loadSenderProfile() {
       try {
         const res = await fetch(`/api/user/email/${encodeURIComponent(to)}`);
-        if (res.ok) {
-          const user = await res.json();
-          const avatarImg = document.getElementById('avatar');
-          if (user.avatar) {
-            avatarImg.src = user.avatar;
-          } else {
-            // Fallback: Initials
-            const parts = user.fullName?.split(' ') || [to.split('@')[0]];
-            const initials = parts.map(p => p[0]).join('').toUpperCase().substring(0, 2);
-            avatarImg.src = 'https://via.placeholder.com/40';
-            avatarImg.style.background = '#777';
-            avatarImg.textContent = initials;
-            avatarImg.style.color = 'white';
-          }
+        const user = await (res.ok ? res.json() : Promise.resolve(null));
+
+        const avatarEl = document.getElementById('avatar');
+        if (user?.avatar) {
+          avatarEl.style.background = 'none';
+          avatarEl.innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="Avatar" />`;
+        } else {
+          avatarEl.innerHTML = '';
+          const name = user?.fullName || to.split('@')[0];
+          const initials = name
+            .split(' ')
+            .map(part => part[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+          avatarEl.textContent = initials;
+          avatarEl.style.background = '#555';
         }
       } catch (err) {
         console.warn('Could not load sender profile:', err);
+        const avatarEl = document.getElementById('avatar');
+        avatarEl.textContent = '?';
+        avatarEl.style.background = '#555';
       }
     }
 
@@ -271,9 +278,9 @@
     async function sendMessage() {
       const to = document.getElementById('to-email').textContent;
       const subject = document.getElementById('subject').value;
-      const body = document.getElementById('body').value;
+      const body = document.getElementById('body').value.trim();
 
-      if (!to || !subject || !body.trim()) {
+      if (!to || !subject || !body) {
         return setStatus('All fields are required.', true);
       }
 
