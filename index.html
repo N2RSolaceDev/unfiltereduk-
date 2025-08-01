@@ -19,7 +19,7 @@
     </div>
   </header>
 
-  <!-- Home Section -->
+  <!-- Home -->
   <section id="home" class="hero">
     <div class="container">
       <h2>One UK.<br><span>One Identity.</span></h2>
@@ -28,22 +28,37 @@
     </div>
   </section>
 
-  <!-- Login Section -->
+  <!-- Login / Setup -->
   <section id="login" class="panel">
     <div class="form-container">
-      <h2>Join the Network</h2>
-      <p>Create your <strong>@unfiltereduk.co.uk</strong> identity</p>
-      <input type="email" id="email" placeholder="you@unfiltereduk.co.uk" required />
-      <input type="password" id="password" placeholder="Choose a password" required />
-      <button onclick="registerOrLogin()">Register / Login</button>
-      <p class="note"><small>We don’t share your data. This is your private network.</small></p>
+      <h2>Create Your Identity</h2>
+      <p>Enter your <strong>@unfiltereduk.co.uk</strong> address and set a secure password.</p>
+
+      <!-- Email Setup -->
+      <div id="stepEmail" class="setup-step">
+        <input type="email" id="setupEmail" placeholder="you@unfiltereduk.co.uk" required />
+        <button onclick="nextToPassword()">Continue</button>
+      </div>
+
+      <!-- Password Setup -->
+      <div id="stepPassword" class="setup-step" style="display:none;">
+        <input type="password" id="setupPassword" placeholder="Create a password" required />
+        <div class="password-strength" id="passwordFeedback"></div>
+        <button onclick="finishSetup()">Complete Setup</button>
+        <div class="text-center">
+          <a href="#" onclick="goBackToEmail(); return false;">← Back</a>
+        </div>
+      </div>
+
+      <!-- Status Messages -->
+      <div id="statusMsg" class="status hidden"></div>
     </div>
   </section>
 
   <!-- Dashboard -->
   <section id="dashboard" class="panel" style="display:none;">
     <div class="container">
-      <h2>Dashboard</h2>
+      <h2>Welcome to Your Network</h2>
       <p>Logged in as: <strong id="userEmail"></strong></p>
 
       <div class="card">
@@ -51,7 +66,8 @@
         <input type="email" id="to" placeholder="To (email)" required />
         <input type="text" id="subject" placeholder="Subject" required />
         <textarea id="body" placeholder="Your message..." rows="5"></textarea>
-        <button onclick="sendMessage()">Send</button>
+        <button onclick="sendMessage()">Send Message</button>
+        <div id="sendStatus" class="status hidden"></div>
       </div>
 
       <div class="card">
@@ -61,7 +77,6 @@
     </div>
   </section>
 
-  <!-- Footer -->
   <footer>
     <div class="container">
       <p>&copy; <script>document.write(new Date().getFullYear())</script> unfiltereduk.co.uk</p>
