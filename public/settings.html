@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings | unfiltereduk.co.uk</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>unfiltered<span>uk</span>.co.uk</h1>
+      <nav>
+        <a href="inbox.html">Inbox</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2>Settings</h2>
+    <p>Email: <strong id="userEmail"></strong></p>
+    <p>Account created: <span id="createdAt"></span></p>
+    <button onclick="confirmLogout()">Log Out All Devices</button>
+    <div id="status" class="status hidden"></div>
+  </main>
+
+  <script src="js/settings.js"></script>
+</body>
+</html>
