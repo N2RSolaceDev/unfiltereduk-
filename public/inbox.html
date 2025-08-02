@@ -6,26 +6,28 @@
   <title>Inbox | unfiltereduk.co.uk</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    /* === Global Dark Theme === */
+    /* === unfiltereduk Global Dark Theme === */
     :root {
-      --bg: #121212;
-      --card-bg: #1e1e1e;
-      --text: #e0e0e0;
-      --text-secondary: #aaaaaa;
-      --accent: #bb86fc;
-      --accent-hover: #9b68db;
+      --bg: #101010;
+      --card-bg: #1a1a1a;
+      --text: #f0f0f0;
+      --text-secondary: #9e9e9e;
+      --accent: #bb86fc; /* Purple */
+      --accent-hover: #a468f5;
+      --error: #cf3339; /* unfiltered Red */
       --border: #333333;
-      --hover-bg: #2a2a2a;
-      --unread-bg: #252525;
-      --toolbar-bg: #1f1f1f;
-      --shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      --hover-bg: #242424;
+      --unread-bg: #20202c;
+      --toolbar-bg: #161616;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      --transition: all 0.2s ease;
     }
 
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
 
     body {
@@ -35,6 +37,7 @@
       min-height: 100vh;
       transition: background 0.3s ease;
       overflow: hidden;
+      font-size: 14px;
     }
 
     /* === Topbar === */
@@ -42,7 +45,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 20px;
+      padding: 14px 24px;
       background: var(--toolbar-bg);
       border-bottom: 1px solid var(--border);
       position: fixed;
@@ -50,38 +53,40 @@
       top: 0;
       z-index: 1000;
       box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
     }
 
     .logo {
-      font-size: 24px;
-      font-weight: 700;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -1px;
       color: var(--accent);
-      letter-spacing: -0.5px;
+      text-decoration: none;
     }
 
     .logo span {
-      color: #cf3339;
+      color: var(--error);
+      text-shadow: 0 0 4px rgba(207, 51, 57, 0.3);
     }
 
     .topbar nav a {
-      margin-left: 20px;
-      color: var(--accent);
+      margin-left: 24px;
+      color: var(--text-secondary);
       text-decoration: none;
       font-size: 14px;
       font-weight: 500;
-      transition: color 0.2s;
+      transition: var(--transition);
     }
 
     .topbar nav a:hover,
     .topbar nav a:focus {
-      color: var(--accent-hover);
-      text-decoration: underline;
-      outline: none;
+      color: var(--accent);
+      text-shadow: 0 0 6px rgba(187, 134, 252, 0.3);
     }
 
     /* === Sidebar === */
     .sidebar {
-      width: 260px;
+      width: 270px;
       background: var(--card-bg);
       border-right: 1px solid var(--border);
       padding-top: 60px;
@@ -90,31 +95,45 @@
       overflow-y: auto;
       transition: width 0.3s ease;
       z-index: 900;
-      box-shadow: inset -2px 0 6px rgba(0,0,0,0.1);
+      box-shadow: inset -1px 0 6px rgba(0,0,0,0.15);
     }
 
     .sidebar-item {
       display: flex;
       align-items: center;
-      padding: 14px 24px;
+      padding: 15px 26px;
       color: var(--text);
-      text-decoration: none;
       font-size: 15px;
       font-weight: 500;
       cursor: pointer;
       border-left: 4px solid transparent;
-      transition: all 0.2s ease;
-      gap: 14px;
+      transition: var(--transition);
+      gap: 16px;
+      position: relative;
     }
 
-    .sidebar-item:hover,
-    .sidebar-item:focus {
-      background: var(--hover-bg);
-      outline: none;
+    .sidebar-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(187, 134, 252, 0.08);
+      color: var(--accent);
+    }
+
+    .sidebar-item:hover::before {
+      width: 4px;
     }
 
     .sidebar-item.active {
-      background: rgba(187, 134, 252, 0.15);
+      background: rgba(187, 134, 252, 0.12);
       color: var(--accent);
       border-left-color: var(--accent);
     }
@@ -128,7 +147,7 @@
 
     /* === Main Content === */
     .main-content {
-      margin-left: 260px;
+      margin-left: 270px;
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -138,14 +157,25 @@
       overflow: hidden;
     }
 
+    /* === Message List Header === */
+    .messages-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card-bg);
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 13px;
+      display: flex;
+      gap: 16px;
+    }
+
     /* === Message List === */
     .messages {
       flex: 1;
       overflow-y: auto;
-      padding: 16px 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
     }
 
     .message-row {
@@ -154,18 +184,17 @@
       padding: 16px 20px;
       border-bottom: 1px solid var(--border);
       cursor: pointer;
-      transition: all 0.2s ease;
-      border-left: 4px solid transparent;
+      transition: var(--transition);
+      gap: 16px;
       background: var(--card-bg);
       opacity: 0;
-      transform: translateY(8px);
-      animation: fadeIn 0.4s forwards;
-      gap: 16px;
+      transform: translateY(6px);
+      animation: fadeIn 0.35s forwards;
     }
 
     .message-row:hover {
       background: var(--hover-bg);
-      border-left-color: var(--accent);
+      transform: translateY(-1px);
     }
 
     .message-row:focus {
@@ -176,11 +205,12 @@
     .message-row.unread {
       background: var(--unread-bg);
       font-weight: 600;
-      color: var(--text);
+      color: #fff;
     }
 
-    .message-row.unread:hover {
-      background: #2d2d2d;
+    .message-row.unread .message-sender,
+    .message-row.unread .message-subject {
+      color: #fff;
     }
 
     .message-sender {
@@ -190,6 +220,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       min-width: 120px;
+      color: var(--text);
     }
 
     .message-subject {
@@ -197,7 +228,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-weight: 500;
+      color: var(--text);
     }
 
     .message-snippet {
@@ -217,52 +248,59 @@
       flex-shrink: 0;
     }
 
-    /* === Empty State === */
-    .empty-state {
+    /* === Empty & Error States === */
+    .empty-state, .error-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 60px 20px;
+      padding: 80px 20px;
       color: var(--text-secondary);
       text-align: center;
-      gap: 12px;
+      gap: 14px;
     }
 
-    .empty-state i {
-      font-size: 48px;
-      opacity: 0.6;
+    .empty-state i, .error-state i {
+      font-size: 52px;
       margin-bottom: 12px;
     }
 
-    .empty-state h3 {
-      font-size: 18px;
-      margin-bottom: 8px;
+    .empty-state i { color: var(--accent); opacity: 0.5; }
+    .error-state i { color: var(--error); }
+
+    .empty-state h3, .error-state h3 {
+      font-size: 19px;
+      color: var(--text);
     }
 
-    .empty-state p {
+    .empty-state p, .error-state p {
       font-size: 14px;
+      max-width: 380px;
+      line-height: 1.5;
     }
 
     /* === Responsive === */
     @media (max-width: 768px) {
       .sidebar { width: 60px; }
       .sidebar-item span { display: none; }
-      .sidebar-item i { margin-right: 0; font-size: 20px; }
+      .sidebar-item i { font-size: 20px; }
       .main-content { margin-left: 60px; }
 
-      .message-sender, .message-snippet { display: none; }
-      .message-subject { flex: 2; }
-      .message-time { font-size: 12px; min-width: 60px; }
+      .messages-header,
+      .message-sender,
+      .message-snippet {
+        display: none;
+      }
 
-      .topbar nav a { margin-left: 16px; }
+      .message-subject { flex: 2; }
+      .message-time { min-width: 80px; font-size: 13px; }
     }
 
     @media (max-width: 480px) {
-      .topbar { padding: 10px 16px; }
-      .topbar nav a { margin-left: 12px; font-size: 13px; }
+      .topbar { padding: 12px 16px; }
+      .topbar nav a { margin-left: 16px; }
       .message-row { padding: 14px 16px; }
-      .message-subject { font-size: 14px; }
+      .logo { font-size: 24px; }
     }
 
     /* === Animations === */
@@ -274,51 +312,60 @@
       scroll-behavior: smooth;
     }
 
+    /* Skeleton Loader */
     .loading-skeleton {
       display: flex;
       padding: 16px 20px;
       border-bottom: 1px solid var(--border);
+      align-items: center;
+      gap: 16px;
     }
 
-    .loading-skeleton div {
-      height: 14px;
+    .loading-skeleton > div {
+      height: 12px;
       background: var(--hover-bg);
       border-radius: 4px;
       animation: pulse 1.5s infinite ease-in-out;
     }
 
-    .loading-sender { width: 120px; }
-    .loading-subject { width: 140px; flex: 1; margin: 0 10px; }
-    .loading-snippet { width: 200px; flex: 2; margin: 0 12px; }
+    .loading-sender { width: 110px; }
+    .loading-subject { flex: 1; }
+    .loading-snippet { flex: 2; }
     .loading-time { width: 60px; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
   </style>
 </head>
 <body>
 
   <!-- Topbar -->
   <header class="topbar">
-    <div class="logo">unfiltered<span>uk</span>.co.uk</div>
+    <a href="inbox.html" class="logo">unfiltered<span>uk</span></a>
     <nav>
-      <a href="profile.html" aria-label="Profile">Profile</a>
-      <a href="settings.html" aria-label="Settings">Settings</a>
-      <a href="#" onclick="logout()" aria-label="Logout">Logout</a>
+      <a href="profile.html">Profile</a>
+      <a href="settings.html">Settings</a>
+      <a href="#" onclick="logout()">Logout</a>
     </nav>
   </header>
 
   <!-- Sidebar -->
   <aside class="sidebar" role="navigation">
-    <div class="sidebar-item active" tabindex="0" role="button" aria-label="Inbox">
+    <div class="sidebar-item active">
       <i class="fas fa-inbox"></i> <span>Inbox</span>
     </div>
-    <div class="sidebar-item" tabindex="0" role="button" aria-label="Compose" onclick="location.href='compose.html'">
+    <div class="sidebar-item" onclick="location.href='compose.html'">
       <i class="fas fa-pen"></i> <span>Compose</span>
     </div>
   </aside>
 
   <!-- Main Content -->
   <main class="main-content">
+    <!-- Messages -->
     <div class="messages" id="messages">
-      <!-- Will be populated by JS -->
+      <!-- Loading State -->
       <div class="loading-skeleton">
         <div class="loading-sender"></div>
         <div class="loading-subject"></div>
@@ -336,17 +383,17 @@
 
   <script>
     const token = localStorage.getItem('token');
-    if (!token) location.href = 'login.html';
+    if (!token) location.href = 'index.html';
 
     async function loadInbox() {
-      // Simulate loading delay for UX
       setTimeout(async () => {
         try {
           const res = await fetch('/api/inbox', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
 
-          if (!res.ok) return logout();
+          if (res.status === 401) return logout();
+          if (!res.ok) throw new Error('Network error');
 
           const messages = await res.json();
           const container = document.getElementById('messages');
@@ -355,9 +402,9 @@
           if (messages.length === 0) {
             container.innerHTML = `
               <div class="empty-state">
-                <i class="fas fa-envelope-open"></i>
-                <h3>No Messages</h3>
-                <p>Your inbox is empty. New messages will appear here.</p>
+                <i class="fas fa-inbox"></i>
+                <h3>Nothing Here Yet</h3>
+                <p>Your inbox is clean. When messages arrive, they’ll show up right here.</p>
               </div>`;
             return;
           }
@@ -382,8 +429,7 @@
             row.tabIndex = 0;
             row.setAttribute('role', 'button');
             row.setAttribute('aria-label', `Message from ${msg.from}: ${msg.subject || '(No Subject)'}`);
-
-            row.style.animationDelay = (index * 0.05) + 's';
+            row.style.animationDelay = (index * 0.04) + 's';
 
             row.innerHTML = `
               <div class="message-sender">${msg.from}</div>
@@ -406,15 +452,15 @@
             container.appendChild(row);
           });
         } catch (err) {
-          console.error('Failed to load inbox:', err);
+          console.error('Inbox load failed:', err);
           document.getElementById('messages').innerHTML = `
-            <div class="empty-state">
-              <i class="fas fa-exclamation-circle"></i>
-              <h3>Connection Error</h3>
-              <p>Could not load messages. Please try again later.</p>
+            <div class="error-state">
+              <i class="fas fa-wifi-slash"></i>
+              <h3>No Connection</h3>
+              <p>We couldn’t reach the server. Check your connection and try again.</p>
             </div>`;
         }
-      }, 300); // Simulated loading
+      }, 400);
     }
 
     function logout() {
