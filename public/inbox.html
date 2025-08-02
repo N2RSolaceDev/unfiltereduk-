@@ -6,20 +6,20 @@
   <title>Inbox | unfiltereduk.co.uk</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    /* === Global Dark Theme === */
+    /* === unfiltereduk Global Dark Theme === */
     :root {
-      --bg: #121212;
-      --card-bg: #1e1e1e;
-      --text: #e0e0e0;
-      --text-secondary: #aaaaaa;
+      --bg: #101010;
+      --card-bg: #1a1a1a;
+      --text: #f0f0f0;
+      --text-secondary: #9e9e9e;
       --accent: #bb86fc; /* Purple */
-      --accent-hover: #9b68db;
-      --error: #cf3339; /* Red */
+      --accent-hover: #a468f5;
+      --error: #cf3339; /* unfiltered Red */
       --border: #333333;
-      --hover-bg: #2a2a2a;
-      --unread-bg: #252525;
-      --toolbar-bg: #1f1f1f;
-      --shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      --hover-bg: #242424;
+      --unread-bg: #20202c;
+      --toolbar-bg: #161616;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
       --transition: all 0.2s ease;
     }
 
@@ -27,7 +27,7 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
 
     body {
@@ -45,7 +45,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 20px;
+      padding: 14px 24px;
       background: var(--toolbar-bg);
       border-bottom: 1px solid var(--border);
       position: fixed;
@@ -53,23 +53,25 @@
       top: 0;
       z-index: 1000;
       box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
     }
 
     .logo {
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -1px;
       color: var(--accent);
       text-decoration: none;
     }
 
     .logo span {
       color: var(--error);
+      text-shadow: 0 0 4px rgba(207, 51, 57, 0.3);
     }
 
     .topbar nav a {
-      margin-left: 20px;
-      color: var(--accent);
+      margin-left: 24px;
+      color: var(--text-secondary);
       text-decoration: none;
       font-size: 14px;
       font-weight: 500;
@@ -78,14 +80,13 @@
 
     .topbar nav a:hover,
     .topbar nav a:focus {
-      color: var(--accent-hover);
-      text-decoration: underline;
-      outline: none;
+      color: var(--accent);
+      text-shadow: 0 0 6px rgba(187, 134, 252, 0.3);
     }
 
     /* === Sidebar === */
     .sidebar {
-      width: 260px;
+      width: 270px;
       background: var(--card-bg);
       border-right: 1px solid var(--border);
       padding-top: 60px;
@@ -94,30 +95,45 @@
       overflow-y: auto;
       transition: width 0.3s ease;
       z-index: 900;
-      box-shadow: inset -2px 0 6px rgba(0,0,0,0.1);
+      box-shadow: inset -1px 0 6px rgba(0,0,0,0.15);
     }
 
     .sidebar-item {
       display: flex;
       align-items: center;
-      padding: 14px 24px;
+      padding: 15px 26px;
       color: var(--text);
       font-size: 15px;
       font-weight: 500;
       cursor: pointer;
       border-left: 4px solid transparent;
       transition: var(--transition);
-      gap: 14px;
+      gap: 16px;
+      position: relative;
     }
 
-    .sidebar-item:hover,
-    .sidebar-item:focus {
-      background: var(--hover-bg);
-      outline: none;
+    .sidebar-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(187, 134, 252, 0.08);
+      color: var(--accent);
+    }
+
+    .sidebar-item:hover::before {
+      width: 4px;
     }
 
     .sidebar-item.active {
-      background: rgba(187, 134, 252, 0.15);
+      background: rgba(187, 134, 252, 0.12);
       color: var(--accent);
       border-left-color: var(--accent);
     }
@@ -131,7 +147,7 @@
 
     /* === Main Content === */
     .main-content {
-      margin-left: 260px;
+      margin-left: 270px;
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -150,43 +166,7 @@
       color: var(--text-secondary);
       font-size: 13px;
       display: flex;
-      align-items: center;
       gap: 16px;
-    }
-
-    .messages-header label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-
-    .messages-header label input[type="checkbox"] {
-      accent-color: var(--accent);
-      width: 16px;
-      height: 16px;
-    }
-
-    .category-tabs {
-      display: flex;
-      gap: 8px;
-      margin-left: auto;
-    }
-
-    .category-tabs span {
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: var(--transition);
-      background: var(--card-bg);
-      color: var(--text-secondary);
-    }
-
-    .category-tabs span.active {
-      background: var(--accent);
-      color: #fff;
     }
 
     /* === Message List === */
@@ -196,7 +176,6 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 1px;
     }
 
     .message-row {
@@ -209,12 +188,13 @@
       gap: 16px;
       background: var(--card-bg);
       opacity: 0;
-      transform: translateY(8px);
-      animation: fadeIn 0.4s forwards;
+      transform: translateY(6px);
+      animation: fadeIn 0.35s forwards;
     }
 
     .message-row:hover {
       background: var(--hover-bg);
+      transform: translateY(-1px);
     }
 
     .message-row:focus {
@@ -225,6 +205,12 @@
     .message-row.unread {
       background: var(--unread-bg);
       font-weight: 600;
+      color: #fff;
+    }
+
+    .message-row.unread .message-sender,
+    .message-row.unread .message-subject {
+      color: #fff;
     }
 
     .message-sender {
@@ -234,6 +220,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       min-width: 120px;
+      color: var(--text);
     }
 
     .message-subject {
@@ -241,7 +228,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-weight: 500;
+      color: var(--text);
     }
 
     .message-snippet {
@@ -270,34 +257,67 @@
       padding: 80px 20px;
       color: var(--text-secondary);
       text-align: center;
-      gap: 12px;
+      gap: 14px;
     }
 
     .empty-state i, .error-state i {
-      font-size: 48px;
-      opacity: 0.7;
+      font-size: 52px;
+      margin-bottom: 12px;
     }
 
-    .empty-state i { color: var(--accent); }
+    .empty-state i { color: var(--accent); opacity: 0.5; }
     .error-state i { color: var(--error); }
 
     .empty-state h3, .error-state h3 {
-      font-size: 18px;
+      font-size: 19px;
       color: var(--text);
     }
 
     .empty-state p, .error-state p {
       font-size: 14px;
-      max-width: 360px;
+      max-width: 380px;
       line-height: 1.5;
     }
 
-    /* === Skeleton Loader === */
+    /* === Responsive === */
+    @media (max-width: 768px) {
+      .sidebar { width: 60px; }
+      .sidebar-item span { display: none; }
+      .sidebar-item i { font-size: 20px; }
+      .main-content { margin-left: 60px; }
+
+      .messages-header,
+      .message-sender,
+      .message-snippet {
+        display: none;
+      }
+
+      .message-subject { flex: 2; }
+      .message-time { min-width: 80px; font-size: 13px; }
+    }
+
+    @media (max-width: 480px) {
+      .topbar { padding: 12px 16px; }
+      .topbar nav a { margin-left: 16px; }
+      .message-row { padding: 14px 16px; }
+      .logo { font-size: 24px; }
+    }
+
+    /* === Animations === */
+    @keyframes fadeIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .messages {
+      scroll-behavior: smooth;
+    }
+
+    /* Skeleton Loader */
     .loading-skeleton {
       display: flex;
-      align-items: center;
       padding: 16px 20px;
       border-bottom: 1px solid var(--border);
+      align-items: center;
       gap: 16px;
     }
 
@@ -316,43 +336,6 @@
     @keyframes pulse {
       0%, 100% { opacity: 0.6; }
       50% { opacity: 1; }
-    }
-
-    /* === Animations === */
-    @keyframes fadeIn {
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .messages {
-      scroll-behavior: smooth;
-    }
-
-    /* === Responsive Design === */
-    @media (max-width: 768px) {
-      .sidebar { width: 60px; }
-      .sidebar-item span { display: none; }
-      .sidebar-item i { font-size: 20px; }
-      .main-content { margin-left: 60px; }
-
-      .messages-header {
-        padding: 12px 16px;
-      }
-
-      .message-sender,
-      .message-snippet {
-        display: none;
-      }
-
-      .message-subject { flex: 2; }
-      .message-time { min-width: 80px; font-size: 13px; }
-      .category-tabs { display: none; }
-    }
-
-    @media (max-width: 480px) {
-      .topbar { padding: 10px 16px; }
-      .topbar nav a { margin-left: 16px; font-size: 13px; }
-      .message-row { padding: 14px 16px; }
-      .logo { font-size: 22px; }
     }
   </style>
 </head>
@@ -380,28 +363,9 @@
 
   <!-- Main Content -->
   <main class="main-content">
-    <!-- Message List Header -->
-    <div class="messages-header">
-      <label>
-        <input type="checkbox" id="select-all">
-      </label>
-      <i class="fas fa-chevron-down" style="font-size:12px; margin-right:16px; color:var(--text-secondary);"></i>
-      <div class="category-tabs">
-        <span class="active">Primary</span>
-        <span>Promotions</span>
-        <span>Social</span>
-      </div>
-    </div>
-
     <!-- Messages -->
     <div class="messages" id="messages">
-      <!-- Loading Skeletons -->
-      <div class="loading-skeleton">
-        <div class="loading-sender"></div>
-        <div class="loading-subject"></div>
-        <div class="loading-snippet"></div>
-        <div class="loading-time"></div>
-      </div>
+      <!-- Loading State -->
       <div class="loading-skeleton">
         <div class="loading-sender"></div>
         <div class="loading-subject"></div>
@@ -419,27 +383,17 @@
 
   <script>
     const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = 'login.html';
-    }
+    if (!token) location.href = 'index.html';
 
     async function loadInbox() {
-      // Simulate loading
       setTimeout(async () => {
         try {
           const res = await fetch('/api/inbox', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
           });
 
-          if (res.status === 401) {
-            return logout();
-          }
-
-          if (!res.ok) {
-            throw new Error('Network error');
-          }
+          if (res.status === 401) return logout();
+          if (!res.ok) throw new Error('Network error');
 
           const messages = await res.json();
           const container = document.getElementById('messages');
@@ -449,8 +403,8 @@
             container.innerHTML = `
               <div class="empty-state">
                 <i class="fas fa-inbox"></i>
-                <h3>No Messages</h3>
-                <p>Your inbox is clean. New messages will show up here.</p>
+                <h3>Nothing Here Yet</h3>
+                <p>Your inbox is clean. When messages arrive, they’ll show up right here.</p>
               </div>`;
             return;
           }
@@ -475,12 +429,9 @@
             row.tabIndex = 0;
             row.setAttribute('role', 'button');
             row.setAttribute('aria-label', `Message from ${msg.from}: ${msg.subject || '(No Subject)'}`);
-            row.style.animationDelay = (index * 0.05) + 's';
+            row.style.animationDelay = (index * 0.04) + 's';
 
             row.innerHTML = `
-              <div style="width:20px; text-align:center;">
-                <i class="far fa-circle" style="font-size:10px; color:var(--text-secondary);"></i>
-              </div>
               <div class="message-sender">${msg.from}</div>
               <div class="message-subject">${msg.subject || '(No Subject)'}</div>
               <div class="message-snippet">${msg.body.substring(0, 100)}${msg.body.length > 100 ? '...' : ''}</div>
@@ -501,12 +452,12 @@
             container.appendChild(row);
           });
         } catch (err) {
-          console.error('Failed to load inbox:', err);
+          console.error('Inbox load failed:', err);
           document.getElementById('messages').innerHTML = `
             <div class="error-state">
-              <i class="fas fa-exclamation-circle"></i>
-              <h3>Connection Failed</h3>
-              <p>We couldn’t load your messages. Please check your connection.</p>
+              <i class="fas fa-wifi-slash"></i>
+              <h3>No Connection</h3>
+              <p>We couldn’t reach the server. Check your connection and try again.</p>
             </div>`;
         }
       }, 400);
@@ -514,10 +465,9 @@
 
     function logout() {
       localStorage.clear();
-      window.location.href = 'index.html';
+      location.href = 'index.html';
     }
 
-    // Load inbox when page is ready
     window.onload = loadInbox;
   </script>
 
