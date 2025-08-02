@@ -7,6 +7,9 @@ const cors = require('cors');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const xss = require('xss'); // 🔒 For sanitizing HTML input
+const { Server: WebSocketServer } = require('ws');
+const http = require('http');
+
 const app = express();
 
 // 🔒 Rate Limiters
@@ -51,8 +54,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 // User Schema
 const userSchema = new mongoose.Schema({
-  email: { 
-    type: String, 
+  email: {
+    type: String,
     required: true,
     lowercase: true,
     match: [/^[^\s@]+@unfiltereduk\.co\.uk$/, 'Invalid email format']
@@ -62,7 +65,6 @@ const userSchema = new mongoose.Schema({
   avatar: String,
   createdAt: { type: Date, default: Date.now }
 });
-
 userSchema.index({ email: 1 }, { unique: true });
 const User = mongoose.model('User', userSchema);
 
@@ -71,15 +73,13 @@ const messageSchema = new mongoose.Schema({
   from: { type: String, required: true },
   to: { type: String, required: true },
   subject: String,
-  body: { 
-    type: String, 
-    required: true 
-    // Can now contain sanitized HTML
+  body: {
+    type: String,
+    required: true
   },
   read: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
-
 const Message = mongoose.model('Message', messageSchema);
 
 // API Key Schema
@@ -87,7 +87,7 @@ const apiKeySchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
   createdBy: { type: String, required: true },
   partnerName: { type: String, required: true },
-  customFrom: { 
+  customFrom: {
     type: String,
     validate: {
       validator: function(v) {
@@ -112,7 +112,6 @@ const apiKeySchema = new mongoose.Schema({
   revoked: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
-
 apiKeySchema.index({ partnerName: 1 }, { unique: true });
 apiKeySchema.index({ customFrom: 1 }, { sparse: true, unique: true });
 const ApiKey = mongoose.model('ApiKey', apiKeySchema);
@@ -149,36 +148,103 @@ async function isEmailTaken(email) {
   return !!apiKey;
 }
 
+// 🌐 WebSocket Setup
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
+// In-memory map: email → Set of WebSocket clients
+const clients = new Map();
+
+// Broadcast to all connected clients of a user
+function broadcastToUser(email, data) {
+  const userClients = clients.get(email);
+  if (userClients) {
+    userClients.forEach(ws => {
+      if (ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify(data));
+      }
+    });
+  }
+}
+
+// Handle WebSocket connections
+wss.on('connection', async (ws, req) => {
+  const token = req.headers.authorization?.split(' ')[1] ||
+                new URLSearchParams(req.url.split('?')[1]).get('token');
+
+  if (!token) {
+    ws.close(1008, 'Authentication required');
+    return;
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      ws.close(1008, 'Invalid or expired token');
+      return;
+    }
+
+    const email = user.email;
+
+    // Add client to user's list
+    if (!clients.has(email)) {
+      clients.set(email, new Set());
+    }
+    clients.get(email).add(ws);
+    console.log(`✅ WebSocket connected for ${email}`);
+
+    ws.on('message', (data) => {
+      try {
+        const msg = JSON.parse(data);
+        // Example: handle read receipt
+        // if (msg.type === 'read' && msg.id) { /* update DB */ }
+      } catch (e) {
+        console.warn('Invalid WS message:', e.message);
+      }
+    });
+
+    ws.on('close', () => {
+      const userClients = clients.get(email);
+      if (userClients) {
+        userClients.delete(ws);
+        if (userClients.size === 0) {
+          clients.delete(email);
+        }
+      }
+      console.log(`🔌 WebSocket disconnected for ${email}`);
+    });
+  });
+});
+
 // 🔐 Register
 app.post('/api/register', authLimiter, async (req, res) => {
   const { email, password, fullName } = req.body;
   const normalizedEmail = email.toLowerCase().trim();
   if (!normalizedEmail.endsWith('@unfiltereduk.co.uk')) {
-    return res.status(400).json({ 
-      error: 'Only @unfiltereduk.co.uk email addresses are allowed.' 
+    return res.status(400).json({
+      error: 'Only @unfiltereduk.co.uk email addresses are allowed.'
     });
   }
   if (await isEmailTaken(normalizedEmail)) {
-    return res.status(400).json({ 
-      error: 'This email or identity is already taken.' 
+    return res.status(400).json({
+      error: 'This email or identity is already taken.'
     });
   }
   if (!password || password.length < 6) {
-    return res.status(400).json({ 
-      error: 'Password must be at least 6 characters.' 
+    return res.status(400).json({
+      error: 'Password must be at least 6 characters.'
     });
   }
   if (!fullName || fullName.trim().length === 0) {
-    return res.status(400).json({ 
-      error: 'Full name is required.' 
+    return res.status(400).json({
+      error: 'Full name is required.'
     });
   }
   try {
     const hashed = await bcrypt.hash(password, 10);
-    const user = new User({ 
-      email: normalizedEmail, 
-      password: hashed, 
-      fullName: fullName.trim() 
+    const user = new User({
+      email: normalizedEmail,
+      password: hashed,
+      fullName: fullName.trim()
     });
     await user.save();
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -220,14 +286,26 @@ app.post('/api/profile', authenticateToken, async (req, res) => {
 app.post('/api/send', authenticateToken, async (req, res) => {
   const { to, subject, body } = req.body;
   const from = req.user.email;
-
   if (!to || !body) return res.status(400).json({ error: 'All fields required.' });
 
-  // Sanitize HTML content
   const sanitizedBody = xss(body);
-
   const msg = new Message({ from, to, subject, body: sanitizedBody });
   await msg.save();
+
+  // 🔔 Notify recipient via WebSocket
+  broadcastToUser(to, {
+    type: 'new_message',
+    message: {
+      id: msg._id,
+      from,
+      to,
+      subject,
+      body: sanitizedBody,
+      read: false,
+      createdAt: msg.createdAt
+    }
+  });
+
   res.json({ message: 'Sent' });
 });
 
@@ -274,7 +352,7 @@ app.delete('/api/delete-account', authenticateToken, async (req, res) => {
 app.get('/api/user/email/:email', async (req, res) => {
   const email = req.params.email.toLowerCase();
   const localPart = email.split('@')[0];
-  const apiKey = await ApiKey.findOne({ 
+  const apiKey = await ApiKey.findOne({
     $or: [
       { customFrom: email },
       { partnerName: localPart }
@@ -337,12 +415,12 @@ app.post('/api/admin/generate-key', authenticateToken, adminLimiter, async (req,
   });
   try {
     await apiKey.save();
-    res.json({ 
-      message: 'API key generated.', 
-      key, 
+    res.json({
+      message: 'API key generated.',
+      key,
       fromEmail,
       avatar: avatar || null,
-      expiresAt 
+      expiresAt
     });
   } catch (err) {
     if (err.code === 11000) {
@@ -379,21 +457,31 @@ app.post('/api/automated-send', apiLimiter, async (req, res) => {
   if (!key || !to || !subject || !body) {
     return res.status(400).json({ error: 'API key and all fields required.' });
   }
-
   const apiKey = await ApiKey.findOne({ key });
   if (!apiKey) return res.status(403).json({ error: 'Invalid API key.' });
   if (apiKey.revoked) return res.status(403).json({ error: 'API key revoked.' });
   if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
     return res.status(403).json({ error: 'API key expired.' });
   }
-
   const from = apiKey.customFrom || `${apiKey.partnerName}@unfiltereduk.co.uk`;
-
-  // Sanitize HTML content
   const sanitizedBody = xss(body);
-
   const msg = new Message({ from, to, subject, body: sanitizedBody });
   await msg.save();
+
+  // 🔔 Notify recipient via WebSocket
+  broadcastToUser(to, {
+    type: 'new_message',
+    message: {
+      id: msg._id,
+      from,
+      to,
+      subject,
+      body: sanitizedBody,
+      read: false,
+      createdAt: msg.createdAt
+    }
+  });
+
   res.json({ message: 'Automated email sent.', from });
 });
 
@@ -402,8 +490,8 @@ app.post('/api/logout', (req, res) => {
   res.json({ message: 'Logged out.' });
 });
 
-// 🏁 Start Server
+// 🏁 Start Server (with WebSocket support)
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🔥 unfiltereduk.co.uk running on port ${PORT}`);
 });
