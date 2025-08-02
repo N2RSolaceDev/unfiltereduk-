@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inbox | unfiltereduk.co.uk</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
     /* === Global Dark Theme === */
     :root {
@@ -17,6 +18,7 @@
       --hover-bg: #2a2a2a;
       --unread-bg: #252525;
       --toolbar-bg: #1f1f1f;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     * {
@@ -31,7 +33,8 @@
       color: var(--text);
       display: flex;
       min-height: 100vh;
-      transition: background 0.3s;
+      transition: background 0.3s ease;
+      overflow: hidden;
     }
 
     /* === Topbar === */
@@ -39,20 +42,21 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 20px;
+      padding: 12px 20px;
       background: var(--toolbar-bg);
       border-bottom: 1px solid var(--border);
       position: fixed;
       width: 100%;
       top: 0;
-      z-index: 100;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+      z-index: 1000;
+      box-shadow: var(--shadow);
     }
 
     .logo {
-      font-size: 22px;
-      font-weight: bold;
+      font-size: 24px;
+      font-weight: 700;
       color: var(--accent);
+      letter-spacing: -0.5px;
     }
 
     .logo span {
@@ -60,27 +64,33 @@
     }
 
     .topbar nav a {
-      margin-left: 18px;
+      margin-left: 20px;
       color: var(--accent);
       text-decoration: none;
       font-size: 14px;
       font-weight: 500;
+      transition: color 0.2s;
     }
 
-    .topbar nav a:hover {
+    .topbar nav a:hover,
+    .topbar nav a:focus {
+      color: var(--accent-hover);
       text-decoration: underline;
+      outline: none;
     }
 
     /* === Sidebar === */
     .sidebar {
-      width: 250px;
+      width: 260px;
       background: var(--card-bg);
       border-right: 1px solid var(--border);
-      padding-top: 60px; /* Matches topbar height */
+      padding-top: 60px;
       position: fixed;
       height: 100vh;
       overflow-y: auto;
-      transition: width 0.3s;
+      transition: width 0.3s ease;
+      z-index: 900;
+      box-shadow: inset -2px 0 6px rgba(0,0,0,0.1);
     }
 
     .sidebar-item {
@@ -93,11 +103,14 @@
       font-weight: 500;
       cursor: pointer;
       border-left: 4px solid transparent;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
+      gap: 14px;
     }
 
-    .sidebar-item:hover {
+    .sidebar-item:hover,
+    .sidebar-item:focus {
       background: var(--hover-bg);
+      outline: none;
     }
 
     .sidebar-item.active {
@@ -107,50 +120,63 @@
     }
 
     .sidebar-item i {
-      margin-right: 16px;
-      font-size: 20px;
+      font-size: 18px;
       width: 24px;
       text-align: center;
-      opacity: 0.9;
+      color: var(--accent);
     }
 
     /* === Main Content === */
     .main-content {
-      margin-left: 250px;
+      margin-left: 260px;
       flex: 1;
       display: flex;
       flex-direction: column;
       background: var(--bg);
-      padding-top: 60px; /* ✅ Push content below fixed topbar */
+      padding-top: 60px;
       min-height: 100vh;
+      overflow: hidden;
     }
 
     /* === Message List === */
     .messages {
       flex: 1;
       overflow-y: auto;
-      padding: 10px 0;
+      padding: 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .message-row {
       display: flex;
       align-items: center;
-      padding: 14px 20px;
+      padding: 16px 20px;
       border-bottom: 1px solid var(--border);
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: all 0.2s ease;
       border-left: 4px solid transparent;
+      background: var(--card-bg);
+      opacity: 0;
+      transform: translateY(8px);
+      animation: fadeIn 0.4s forwards;
+      gap: 16px;
     }
 
     .message-row:hover {
       background: var(--hover-bg);
-      border-left-color: var(--border);
+      border-left-color: var(--accent);
+    }
+
+    .message-row:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
     }
 
     .message-row.unread {
       background: var(--unread-bg);
-      font-weight: 500;
-      border-left-color: transparent;
+      font-weight: 600;
+      color: var(--text);
     }
 
     .message-row.unread:hover {
@@ -158,12 +184,12 @@
     }
 
     .message-sender {
-      width: 220px;
+      width: 200px;
       font-weight: 500;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: var(--text);
+      min-width: 120px;
     }
 
     .message-subject {
@@ -171,7 +197,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: var(--text);
+      font-weight: 500;
     }
 
     .message-snippet {
@@ -180,133 +206,215 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      margin-left: 12px;
     }
 
     .message-time {
       color: var(--text-secondary);
       font-size: 13px;
       white-space: nowrap;
-      margin-left: 16px;
-      min-width: 80px;
+      min-width: 70px;
       text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* === Empty State === */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+      text-align: center;
+      gap: 12px;
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      opacity: 0.6;
+      margin-bottom: 12px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 14px;
     }
 
     /* === Responsive === */
     @media (max-width: 768px) {
       .sidebar { width: 60px; }
       .sidebar-item span { display: none; }
-      .sidebar-item i { margin-right: 0; }
+      .sidebar-item i { margin-right: 0; font-size: 20px; }
+      .main-content { margin-left: 60px; }
+
       .message-sender, .message-snippet { display: none; }
       .message-subject { flex: 2; }
-      .main-content { 
-        margin-left: 60px; 
-        padding-top: 60px; 
-      }
-      .message-time { font-size: 12px; }
+      .message-time { font-size: 12px; min-width: 60px; }
+
+      .topbar nav a { margin-left: 16px; }
     }
 
-    /* === Smooth Animation === */
+    @media (max-width: 480px) {
+      .topbar { padding: 10px 16px; }
+      .topbar nav a { margin-left: 12px; font-size: 13px; }
+      .message-row { padding: 14px 16px; }
+      .message-subject { font-size: 14px; }
+    }
+
+    /* === Animations === */
+    @keyframes fadeIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .messages {
       scroll-behavior: smooth;
     }
 
-    .message-row {
-      opacity: 0;
-      transform: translateY(10px);
-      animation: fadeIn 0.4s forwards;
+    .loading-skeleton {
+      display: flex;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
     }
 
-    @keyframes fadeIn {
-      to { opacity: 1; transform: translateY(0); }
+    .loading-skeleton div {
+      height: 14px;
+      background: var(--hover-bg);
+      border-radius: 4px;
+      animation: pulse 1.5s infinite ease-in-out;
     }
+
+    .loading-sender { width: 120px; }
+    .loading-subject { width: 140px; flex: 1; margin: 0 10px; }
+    .loading-snippet { width: 200px; flex: 2; margin: 0 12px; }
+    .loading-time { width: 60px; }
   </style>
 </head>
 <body>
 
   <!-- Topbar -->
-  <div class="topbar">
+  <header class="topbar">
     <div class="logo">unfiltered<span>uk</span>.co.uk</div>
     <nav>
-      <a href="profile.html">Profile</a>
-      <a href="settings.html">Settings</a>
-      <a href="#" onclick="logout()">Logout</a>
+      <a href="profile.html" aria-label="Profile">Profile</a>
+      <a href="settings.html" aria-label="Settings">Settings</a>
+      <a href="#" onclick="logout()" aria-label="Logout">Logout</a>
     </nav>
-  </div>
+  </header>
 
   <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-item active">
-      <i>📧</i> <span>Inbox</span>
+  <aside class="sidebar" role="navigation">
+    <div class="sidebar-item active" tabindex="0" role="button" aria-label="Inbox">
+      <i class="fas fa-inbox"></i> <span>Inbox</span>
     </div>
-    <div class="sidebar-item" onclick="location.href='compose.html'">
-      <i>✏️</i> <span>Compose</span>
+    <div class="sidebar-item" tabindex="0" role="button" aria-label="Compose" onclick="location.href='compose.html'">
+      <i class="fas fa-pen"></i> <span>Compose</span>
     </div>
-  </div>
+  </aside>
 
   <!-- Main Content -->
-  <div class="main-content">
-    <!-- Message List -->
+  <main class="main-content">
     <div class="messages" id="messages">
-      <div style="padding: 20px; color: var(--text-secondary); font-style: italic; text-align: center;">
-        No messages yet.
+      <!-- Will be populated by JS -->
+      <div class="loading-skeleton">
+        <div class="loading-sender"></div>
+        <div class="loading-subject"></div>
+        <div class="loading-snippet"></div>
+        <div class="loading-time"></div>
+      </div>
+      <div class="loading-skeleton">
+        <div class="loading-sender"></div>
+        <div class="loading-subject"></div>
+        <div class="loading-snippet"></div>
+        <div class="loading-time"></div>
       </div>
     </div>
-  </div>
+  </main>
 
   <script>
     const token = localStorage.getItem('token');
     if (!token) location.href = 'login.html';
 
     async function loadInbox() {
-      const res = await fetch('/api/inbox', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      // Simulate loading delay for UX
+      setTimeout(async () => {
+        try {
+          const res = await fetch('/api/inbox', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
 
-      if (!res.ok) return logout();
+          if (!res.ok) return logout();
 
-      const messages = await res.json();
-      const container = document.getElementById('messages');
-      container.innerHTML = '';
+          const messages = await res.json();
+          const container = document.getElementById('messages');
+          container.innerHTML = '';
 
-      if (messages.length === 0) {
-        container.innerHTML = '<div style="padding: 20px; color: var(--text-secondary); text-align: center;">No messages yet.</div>';
-        return;
-      }
+          if (messages.length === 0) {
+            container.innerHTML = `
+              <div class="empty-state">
+                <i class="fas fa-envelope-open"></i>
+                <h3>No Messages</h3>
+                <p>Your inbox is empty. New messages will appear here.</p>
+              </div>`;
+            return;
+          }
 
-      messages.forEach((msg, index) => {
-        const now = new Date();
-        const msgDate = new Date(msg.createdAt);
-        let timeStr;
+          messages.forEach((msg, index) => {
+            const now = new Date();
+            const msgDate = new Date(msg.createdAt);
+            let timeStr;
 
-        if (now.toDateString() === msgDate.toDateString()) {
-          timeStr = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } else if (now.getDate() - msgDate.getDate() === 1) {
-          timeStr = 'Yesterday';
-        } else {
-          timeStr = msgDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            if (now.toDateString() === msgDate.toDateString()) {
+              timeStr = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else if (now.getDate() - msgDate.getDate() === 1) {
+              timeStr = 'Yesterday';
+            } else {
+              timeStr = msgDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            }
+
+            const row = document.createElement('div');
+            row.className = 'message-row';
+            if (!msg.read) row.classList.add('unread');
+            row.dataset.messageId = msg._id;
+            row.tabIndex = 0;
+            row.setAttribute('role', 'button');
+            row.setAttribute('aria-label', `Message from ${msg.from}: ${msg.subject || '(No Subject)'}`);
+
+            row.style.animationDelay = (index * 0.05) + 's';
+
+            row.innerHTML = `
+              <div class="message-sender">${msg.from}</div>
+              <div class="message-subject">${msg.subject || '(No Subject)'}</div>
+              <div class="message-snippet">${msg.body.substring(0, 100)}${msg.body.length > 100 ? '...' : ''}</div>
+              <div class="message-time">${timeStr}</div>
+            `;
+
+            row.onclick = () => {
+              window.location.href = `email.html?id=${msg._id}`;
+            };
+
+            row.onkeydown = (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                row.click();
+              }
+            };
+
+            container.appendChild(row);
+          });
+        } catch (err) {
+          console.error('Failed to load inbox:', err);
+          document.getElementById('messages').innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-exclamation-circle"></i>
+              <h3>Connection Error</h3>
+              <p>Could not load messages. Please try again later.</p>
+            </div>`;
         }
-
-        const row = document.createElement('div');
-        row.className = 'message-row';
-        if (!msg.read) row.classList.add('unread');
-        row.dataset.messageId = msg._id;
-
-        row.style.animationDelay = (index * 0.05) + 's';
-
-        row.innerHTML = `
-          <div class="message-sender">${msg.from}</div>
-          <div class="message-subject">${msg.subject || '(No Subject)'}</div>
-          <div class="message-snippet">${msg.body.substring(0, 100)}${msg.body.length > 100 ? '...' : ''}</div>
-          <div class="message-time">${timeStr}</div>
-        `;
-
-        row.onclick = () => {
-          window.location.href = `email.html?id=${msg._id}`;
-        };
-
-        container.appendChild(row);
-      });
+      }, 300); // Simulated loading
     }
 
     function logout() {
