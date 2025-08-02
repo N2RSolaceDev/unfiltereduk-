@@ -10,11 +10,12 @@ const http = require('http');
 
 const app = express();
 
-// ✅ Fix: Trust proxy for X-Forwarded-For (Render, Heroku, etc.)
+// ✅ Critical: Trust proxy on Render
 app.set('trust proxy', 1);
 
 // Rate Limiters
 const rateLimit = require('express-rate-limit');
+
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -22,6 +23,7 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -29,6 +31,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
 const adminLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
@@ -43,13 +46,19 @@ app.use('/api/admin/', adminLimiter);
 app.use('/api/', apiLimiter);
 
 // Middleware
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: true, // Allow all origins (Render handles DNS)
+  credentials: true
+}));
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static('public')); // Serve inbox.html, compose.html, etc.
 
-// Create HTTP + WebSocket server
+// === WebSocket & HTTP Server Setup ===
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ 
+  server, 
+  path: '/ws' // Clean path for WebSocket
+});
 
 // Track connected users: email → Set of WebSocket clients
 const clients = new Map();
@@ -60,7 +69,11 @@ function broadcastToUser(email, data) {
   if (userClients) {
     userClients.forEach(ws => {
       if (ws.readyState === ws.OPEN) {
-        ws.send(JSON.stringify(data));
+        try {
+          ws.send(JSON.stringify(data));
+        } catch (e) {
+          console.error(`Failed to send to ${email}:`, e);
+        }
       }
     });
   }
@@ -91,6 +104,7 @@ wss.on('connection', (ws, req) => {
     clients.get(email).add(ws);
     console.log(`✅ WebSocket connected: ${email}`);
 
+    // Cleanup on close
     ws.on('close', () => {
       const userClients = clients.get(email);
       if (userClients) {
@@ -100,6 +114,16 @@ wss.on('connection', (ws, req) => {
         }
       }
       console.log(`🔌 WebSocket disconnected: ${email}`);
+    });
+
+    // Optional: Handle incoming messages (e.g. read receipts)
+    ws.on('message', (data) => {
+      try {
+        const msg = JSON.parse(data);
+        // Example: if (msg.type === 'read' && msg.id) { /* update DB */ }
+      } catch (e) {
+        console.warn('Invalid WS message:', e.message);
+      }
     });
   });
 });
@@ -257,7 +281,7 @@ app.post('/api/send', authenticateToken, async (req, res) => {
     const msg = new Message({ from, to, subject, body });
     await msg.save();
 
-    // 🔔 Notify recipient in real time
+    // ✅ Notify recipient in real time
     broadcastToUser(to, {
       type: 'new_message',
       message: {
@@ -421,7 +445,7 @@ app.post('/api/automated-send', async (req, res) => {
   const msg = new Message({ from, to, subject, body });
   await msg.save();
 
-  // 🔔 Notify recipient in real time
+  // ✅ Notify recipient in real time
   broadcastToUser(to, {
     type: 'new_message',
     message: {
@@ -443,8 +467,8 @@ app.post('/api/logout', (req, res) => {
   res.json({ message: 'Logged out.' });
 });
 
-// 🏁 Start Server (with WebSocket support)
+// ✅ Start server
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🔥 unfiltereduk.co.uk running on port ${PORT}`);
 });
